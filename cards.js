@@ -2,9 +2,9 @@
 import { GoogleSpreadsheet } from 'google-spreadsheet';
 import { JWT } from 'google-auth-library';
 
-// Убедитесь, что лист в Google Sheets называется 'Cards'
+// Проверьте, что имя листа в Google Sheets именно 'Cards'
 const SHEET_NAME = 'Cards'; 
-const SHEET_INDEX = 0; // Используем индекс 0, как в вашем коде (первый лист)
+const SHEET_INDEX = 0; 
 
 // Функция инициализации и авторизации
 async function getSpreadsheetSheet() {
@@ -18,8 +18,6 @@ async function getSpreadsheetSheet() {
 
     const serviceAuth = new JWT({
         email: credentials.client_email,
-        // private_key: в Vercel часто нужно заменить \\n на \n, 
-        // но JSON.parse обычно справляется, если ключ правильно скопирован.
         key: credentials.private_key, 
         scopes: ['https://www.googleapis.com/auth/spreadsheets'],
     });
@@ -27,14 +25,13 @@ async function getSpreadsheetSheet() {
     const doc = new GoogleSpreadsheet(spreadsheetId, serviceAuth);
     await doc.loadInfo(); 
     
-    // Используем doc.sheetsByIndex[0], как в вашем коде
     let sheet = doc.sheetsByIndex[SHEET_INDEX];
 
     if (!sheet) {
         throw new Error(`Sheet with index ${SHEET_INDEX} not found.`);
     }
     
-    // Загружаем заголовки для работы с именованными полями
+    // Загружаем заголовки, чтобы работать с row.FieldName
     await sheet.loadHeaderRow(); 
 
     return sheet;
@@ -43,7 +40,7 @@ async function getSpreadsheetSheet() {
 export default async function handler(req, res) {
     // Настройка CORS
     res.setHeader('Access-Control-Allow-Origin', '*'); 
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
     if (req.method === 'OPTIONS') {
@@ -54,52 +51,28 @@ export default async function handler(req, res) {
         const sheet = await getSpreadsheetSheet();
         
         // --------------------------------------------------
-        // A. GET-ЗАПРОС (Получение карт по UserID)
-        // --------------------------------------------------
-        if (req.method === 'GET') {
-            const { userId } = req.query; // Получаем ID пользователя из Mini App
-            if (!userId) {
-                return res.status(400).json({ error: 'Missing userId query parameter.' });
-            }
-            
-            const rows = await sheet.getRows(); 
-
-            const cards = rows
-                // row.UserID должен соответствовать заголовку столбца в Sheets
-                .filter(row => String(row.UserID) === String(userId)) 
-                .map(row => ({
-                    userId: row.UserID,
-                    name: row.CardName || 'Без названия',
-                    number: row.CardNumber || '',          
-                    barcodeType: row.BarcodeType || 'CODE128' 
-                }));
-
-            return res.status(200).json({ cards });
-        }
-
-        // --------------------------------------------------
-        // B. POST-ЗАПРОС (Добавление новой карты)
+        // ТОЛЬКО POST-ЗАПРОС (Добавление новой карты)
         // --------------------------------------------------
         if (req.method === 'POST') {
-            // Ожидаем эти поля от фронтенда (Mini App)
             const { userId, cardName, cardNumber, barcodeType = 'CODE128' } = req.body;
             
             if (!userId || !cardName || !cardNumber) {
-                return res.status(400).json({ error: 'Missing required card data (userId, cardName, cardNumber).' });
+                return res.status(400).json({ error: 'Missing required card data.' });
             }
 
-            // Добавляем новую строку, используя названия заголовков столбцов
+            // Добавляем новую строку
             await sheet.addRow({
                 UserID: userId,
                 CardName: cardName,
                 CardNumber: cardNumber,
-                BarcodeType: barcodeType
+                BarcodeType: barcodeType // Сохраняем, даже если значение жестко задано
             });
 
             return res.status(201).json({ success: true, message: 'Card added successfully.', card: req.body });
         }
 
-        return res.status(405).json({ error: 'Method Not Allowed' });
+        // Блокируем GET и другие методы
+        return res.status(405).json({ error: 'Method Not Allowed. Use POST.' });
 
     } catch (error) {
         console.error('❌ API Error:', error);
