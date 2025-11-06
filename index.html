@@ -1,316 +1,445 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Discount Cards</title>
-  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <style>
-    body {
-      font-family: system-ui, -apple-system, sans-serif;
-      background: var(--tg-theme-bg-color, #f4f4f6);
-      color: var(--tg-theme-text-color, #222);
-      margin: 0;
-      padding: 0;
-    }
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Discount Cards</title>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    
+    <style>
+        /* Переменные для Dark Mode */
+        :root {
+            --bg-dark: #1e1e1e; /* Основной фон */
+            --bg-card-dark: #2a2a2a; /* Фон карточек и форм */
+            --text-light: #ffffff;
+            --text-subtle: #aaaaaa;
+            --accent-color: var(--tg-theme-button-color, #4a90e2); /* Используем цвет кнопки Telegram */
+            --border-color: #333;
+            --shadow-color: rgba(0, 0, 0, 0.4);
+        }
 
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 16px 20px;
-      font-size: 22px;
-      background: var(--tg-theme-bg-color, #fff);
-      border-bottom: 1px solid #ddd;
-      font-weight: 600;
-    }
+        /* Общие стили */
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-light);
+            margin: 0;
+            padding: 0;
+            transition: background 0.3s, color 0.3s;
+        }
 
-    #addBtn {
-      font-size: 28px;
-      border: none;
-      background: none;
-      cursor: pointer;
-      color: var(--tg-theme-button-color, #2a9d8f);
-    }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            font-size: 22px;
+            background: var(--bg-dark);
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 600;
+        }
 
-    .form {
-      display: none;
-      flex-direction: column;
-      gap: 10px;
-      padding: 20px;
-      background: #fff;
-      border-bottom: 1px solid #eee;
-    }
+        #addBtn {
+            font-size: 28px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            color: var(--accent-color);
+            padding: 0;
+            line-height: 1;
+        }
 
-    input, select, button {
-      padding: 12px;
-      font-size: 16px;
-      border-radius: 12px;
-      border: 1px solid #ccc;
-    }
+        /* Форма добавления */
+        .form {
+            display: none;
+            flex-direction: column;
+            gap: 12px;
+            padding: 20px;
+            background: var(--bg-card-dark);
+            border-bottom: 1px solid var(--border-color);
+        }
 
-    .colors {
-      display: flex;
-      gap: 10px;
-      margin-top: 5px;
-    }
+        input, select {
+            padding: 12px;
+            font-size: 16px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            background: #333; /* Более темный фон для полей */
+            color: var(--text-light);
+        }
+        input::placeholder {
+            color: var(--text-subtle);
+        }
 
-    .color {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      cursor: pointer;
-      border: 2px solid transparent;
-      transition: transform 0.2s ease;
-    }
-    .color:hover { transform: scale(1.1); }
-    .color.active { border: 2px solid #000; }
+        /* Кнопки */
+        button {
+            padding: 12px;
+            font-size: 16px;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        #saveCard {
+            background: var(--accent-color);
+            color: var(--text-light);
+            font-weight: 600;
+        }
+        #saveCard:active {
+            filter: brightness(0.9);
+        }
 
-    #cards {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      padding: 16px;
-    }
+        /* Выбор цвета */
+        .colors {
+            display: flex;
+            gap: 10px;
+            margin-top: 5px;
+        }
 
-    .card {
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      border-radius: 20px;
-      padding: 20px;
-      color: #fff;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    }
+        .color {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .color:hover { transform: scale(1.1); }
+        .color.active { 
+            border: 2px solid var(--text-light); 
+            box-shadow: 0 0 0 2px var(--bg-dark); /* Обводка для контраста */
+        }
 
-    .card:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 6px 16px rgba(0,0,0,0.2);
-    }
+        /* Секция карт */
+        #cards {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            padding: 16px;
+        }
 
-    .card .shop {
-      font-size: 20px;
-      letter-spacing: 0.5px;
-    }
+        .card {
+            position: relative;
+            display: grid;
+            grid-template-areas: "shop delete" "number number";
+            align-items: center;
+            border-radius: 20px;
+            padding: 20px;
+            color: var(--text-light);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 6px 16px var(--shadow-color);
+        }
 
-    .card .number {
-      opacity: 0.8;
-      font-size: 14px;
-      text-align: right;
-      margin-top: 30px;
-    }
+        .card:active {
+            transform: translateY(1px);
+            box-shadow: 0 4px 12px var(--shadow-color);
+        }
 
-    .modal {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      background: rgba(0,0,0,0.4);
-      backdrop-filter: blur(4px);
-      z-index: 1000;
-    }
+        .card .shop {
+            grid-area: shop;
+            font-size: 20px;
+            letter-spacing: 0.5px;
+        }
 
-    .modal-content {
-      background: #fff;
-      border-radius: 20px;
-      padding: 24px;
-      width: 90%;
-      max-width: 400px;
-      text-align: center;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-      animation: fadeIn 0.25s ease;
-        <button id="deleteCard" style="
-        margin-top: 12px;
-        background: #e63946;
-        color: #fff;
-        border: none;
-        padding: 12px 20px;
-        font-size: 16px;
-        border-radius: 12px;
-        cursor: pointer;
-        ">Удалить карту</button>
+        .card .number {
+            grid-area: number;
+            opacity: 0.9;
+            font-size: 14px;
+            text-align: right;
+            margin-top: 25px;
+        }
 
-    }
+        .delete-card-btn {
+            grid-area: delete;
+            justify-self: end;
+            background: none;
+            border: none;
+            color: var(--text-light);
+            opacity: 0.7;
+            font-size: 20px;
+            cursor: pointer;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.2s;
+            padding: 0;
+        }
+        .delete-card-btn:hover { opacity: 1; }
 
-    @keyframes fadeIn {
-      from { opacity: 0; transform: scale(0.9); }
-      to { opacity: 1; transform: scale(1); }
-    }
+        /* Модальное окно */
+        .modal {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+        }
 
-    .modal-content h3 {
-      margin-top: 0;
-      font-size: 22px;
-    }
+        .modal-content {
+            background: var(--bg-card-dark);
+            border-radius: 20px;
+            padding: 24px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            animation: fadeIn 0.25s ease;
+        }
 
-    svg, #qrcode {
-      margin-top: 10px;
-      width: 100%;
-    }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
 
-    #closeModal {
-      margin-top: 18px;
-      background: #2a9d8f;
-      color: #fff;
-      border: none;
-      padding: 12px 20px;
-      font-size: 16px;
-      border-radius: 12px;
-      cursor: pointer;
-    }
-  </style>
+        .modal-content h3 {
+            margin-top: 0;
+            font-size: 22px;
+            color: var(--text-light);
+        }
+        .modal-content p {
+            color: var(--text-subtle);
+        }
+
+        svg, #qrcode {
+            margin: 20px auto 0;
+            width: 100%;
+            max-width: 300px;
+            height: auto;
+            display: block;
+        }
+        
+        /* Кнопки модального окна */
+        #deleteCard, #closeModal {
+            margin-top: 15px;
+            font-weight: 600;
+        }
+        #deleteCard {
+            background: #e63946; /* Красный цвет для удаления */
+            color: #fff;
+        }
+        #closeModal {
+            background: #555; /* Серый цвет для закрытия */
+            color: #fff;
+        }
+    </style>
 </head>
 <body>
-  <header>
-    <span>Мои карты</span>
-    <button id="addBtn">＋</button>
-  </header>
+    <header>
+        <span>Мои карты</span>
+        <button id="addBtn">＋</button>
+    </header>
 
-  <div class="form" id="form">
-    <input id="shop_name" placeholder="Название магазина" />
-    <input id="card_number" placeholder="Номер карты" />
-    <label>Тип кода:</label>
-    <select id="code_type">
-      <option value="barcode">Штрихкод</option>
-      <option value="qr">QR-код</option>
-    </select>
-    <div class="colors" id="colorSelect">
-      <div class="color active" style="background:#2a9d8f" data-color="#2a9d8f"></div>
-      <div class="color" style="background:#264653" data-color="#264653"></div>
-      <div class="color" style="background:#e76f51" data-color="#e76f51"></div>
-      <div class="color" style="background:#f4a261" data-color="#f4a261"></div>
-      <div class="color" style="background:#457b9d" data-color="#457b9d"></div>
+    <div class="form" id="form">
+        <input id="shop_name" placeholder="Название магазина" />
+        <input id="card_number" placeholder="Номер карты" type="number" pattern="\d*" />
+        <label style="color: var(--text-subtle); margin-top: 5px;">Тип кода:</label>
+        <select id="code_type">
+            <option value="barcode">Штрихкод (Code 128)</option>
+            <option value="qr">QR-код</option>
+        </select>
+        <div class="colors" id="colorSelect">
+            <div class="color active" style="background:#e63946" data-color="#e63946"></div>
+            <div class="color" style="background:#f4a261" data-color="#f4a261"></div>
+            <div class="color" style="background:#2a9d8f" data-color="#2a9d8f"></div>
+            <div class="color" style="background:#457b9d" data-color="#457b9d"></div>
+            <div class="color" style="background:#555" data-color="#555"></div>
+        </div>
+        <button id="saveCard">Сохранить карту</button>
     </div>
-    <button id="saveCard">Сохранить карту</button>
-  </div>
 
-  <div id="cards"></div>
+    <div id="cards"></div>
 
-  <!-- Modal -->
-  <div class="modal" id="modal">
-    <div class="modal-content">
-      <h3 id="modal-shop"></h3>
-      <p id="modal-number"></p>
-      <div id="qrcode"></div>
-      <svg id="barcode"></svg>
-      <button id="closeModal">Закрыть</button>
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <h3 id="modal-shop"></h3>
+            <p id="modal-number"></p>
+            <div id="qrcode"></div>
+            <svg id="barcode"></svg>
+            
+            <button id="deleteCard">Удалить карту</button>
+            <button id="closeModal">Закрыть</button>
+        </div>
     </div>
-  </div>
 
-  <script>
-    const tg = window.Telegram.WebApp;
-    tg.expand();
+    <script>
+        // Инициализация Telegram Web App
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        // Включаем темную тему Telegram, если она доступна
+        if (tg.colorScheme === 'dark') {
+            document.body.style.setProperty('--bg-dark', tg.themeParams.bg_color);
+            document.body.style.setProperty('--bg-card-dark', tg.themeParams.secondary_bg_color || '#2a2a2a');
+        }
 
-    const API_URL = "https://discount-cards.vercel.app/api/save";
-    const cardsDiv = document.getElementById("cards");
-    const form = document.getElementById("form");
-    const addBtn = document.getElementById("addBtn");
-    const saveCard = document.getElementById("saveCard");
+        const API_URL = "https://discount-cards.vercel.app/api/save";
+        
+        // Объявление всех элементов DOM (исправление ошибки области видимости)
+        const cardsDiv = document.getElementById("cards");
+        const form = document.getElementById("form");
+        const addBtn = document.getElementById("addBtn");
+        const saveCard = document.getElementById("saveCard");
 
-    let selectedColor = "#2a9d8f";
-    document.querySelectorAll(".color").forEach(c => {
-      c.onclick = () => {
-        document.querySelectorAll(".color").forEach(el => el.classList.remove("active"));
-        c.classList.add("active");
-        selectedColor = c.dataset.color;
-      };
-    });
+        const modal = document.getElementById("modal");
+        const closeModal = document.getElementById("closeModal");
+        const modalShop = document.getElementById("modal-shop");
+        const modalNumber = document.getElementById("modal-number");
+        const barcode = document.getElementById("barcode");
+        const qrcodeDiv = document.getElementById("qrcode");
+        const deleteBtn = document.getElementById("deleteCard");
 
-    addBtn.onclick = () => {
-      form.style.display = form.style.display === "flex" ? "none" : "flex";
-    };
+        let selectedColor = "#e63946"; // Цвет по умолчанию для новой темной темы
 
-    async function loadCards() {
-      const user = tg.initDataUnsafe?.user || { id: "unknown" };
-      const res = await fetch(`${API_URL}?user_id=${user.id}`);
-      const cards = await res.json();
-      cardsDiv.innerHTML = "";
-      cards.forEach(c => {
-        const div = document.createElement("div");
-        div.className = "card";
-        div.style.background = c.color || "#2a9d8f";
-        div.innerHTML = `
-          <div class="shop">${c.shop_name}</div>
-          <div class="number">№ ${c.card_number}</div>
-        `;
-        div.onclick = () => openModal(c);
-        cardsDiv.appendChild(div);
-      });
-    }
+        // 1. Обработчик выбора цвета
+        document.querySelectorAll(".color").forEach(c => {
+            if (c.dataset.color === selectedColor) c.classList.add("active");
+            
+            c.onclick = () => {
+                document.querySelectorAll(".color").forEach(el => el.classList.remove("active"));
+                c.classList.add("active");
+                selectedColor = c.dataset.color;
+            };
+        });
 
-    saveCard.onclick = async () => {
-      const shop_name = document.getElementById("shop_name").value.trim();
-      const card_number = document.getElementById("card_number").value.trim();
-      const type = document.getElementById("code_type").value;
-      if (!shop_name || !card_number) return alert("Заполните все поля!");
+        // 2. Обработчик кнопки "Плюс"
+        addBtn.onclick = () => {
+            form.style.display = form.style.display === "flex" ? "none" : "flex";
+        };
 
-      const user = tg.initDataUnsafe?.user || { id: "unknown", username: "anonymous" };
-      const res = await fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user, shop_name, card_number, color: selectedColor, type }),
-      });
-      if (res.ok) {
-        form.style.display = "none";
-        document.getElementById("shop_name").value = "";
-        document.getElementById("card_number").value = "";
+        // 3. Загрузка и отображение карт
+        async function loadCards() {
+            const user = tg.initDataUnsafe?.user || { id: "unknown" };
+            const res = await fetch(`${API_URL}?user_id=${user.id}`);
+            const cards = await res.json();
+            
+            cardsDiv.innerHTML = "";
+            cards.forEach(c => {
+                const div = document.createElement("div");
+                div.className = "card";
+                div.style.background = c.color || "#e63946"; // Новый цвет по умолчанию
+                
+                div.innerHTML = `
+                    <div class="shop">${c.shop_name}</div>
+                    <button class="delete-card-btn" data-card-number="${c.card_number}">✖</button>
+                    <div class="number">№ ${c.card_number}</div>
+                `;
+                
+                // При клике на саму карту (кроме кнопки удаления) открываем модальное окно
+                div.onclick = (e) => {
+                    // Проверяем, не был ли клик по кнопке удаления
+                    if (!e.target.classList.contains('delete-card-btn')) {
+                        openModal(c);
+                    }
+                };
+                
+                // Обработчик удаления карты (для кнопки на самой карте)
+                div.querySelector('.delete-card-btn').onclick = (e) => {
+                    e.stopPropagation(); // Останавливаем всплытие, чтобы не сработало открытие модального окна
+                    deleteCard(c.card_number);
+                };
+                
+                cardsDiv.appendChild(div);
+            });
+        }
+        
+        // 4. Функция удаления карты
+        async function deleteCard(cardNumber) {
+            const user = tg.initDataUnsafe?.user || { id: "unknown" };
+            
+            if (!confirm(`Вы уверены, что хотите удалить карту № ${cardNumber} ?`)) return;
+
+            const res = await fetch(API_URL, {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ user_id: user.id, card_number: cardNumber }),
+            });
+
+            if (res.ok) {
+                modal.style.display = "none";
+                loadCards();
+                tg.showPopup({ message: "Карта успешно удалена!" });
+            } else {
+                alert("Ошибка при удалении карты!");
+            }
+        }
+        
+        // 5. Обработчик кнопки "Сохранить"
+        saveCard.onclick = async () => {
+            const shop_name = document.getElementById("shop_name").value.trim();
+            const card_number = document.getElementById("card_number").value.trim();
+            const type = document.getElementById("code_type").value;
+            
+            if (!shop_name || !card_number) return tg.showAlert("Заполните все поля!");
+
+            const user = tg.initDataUnsafe?.user || { id: "unknown", username: "anonymous" };
+            
+            // Включаем MainButton для Telegram UI (опционально, для лучшей интеграции)
+            tg.MainButton.setText("Сохранение...").show().showProgress(); 
+            
+            const res = await fetch(API_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ user, shop_name, card_number, color: selectedColor, type }),
+            });
+            
+            tg.MainButton.hideProgress().hide();
+
+            if (res.ok) {
+                form.style.display = "none";
+                document.getElementById("shop_name").value = "";
+                document.getElementById("card_number").value = "";
+                loadCards();
+                tg.showPopup({ message: "Карта успешно добавлена!" });
+            } else alert("Ошибка при добавлении!");
+        };
+
+        // 6. Открытие модального окна
+        function openModal(card) {
+            modal.style.display = "flex";
+            modalShop.textContent = card.shop_name;
+            modalNumber.textContent = "№ " + card.card_number;
+            qrcodeDiv.innerHTML = "";
+            barcode.innerHTML = "";
+
+            if (card.type === "qr") {
+                // Скрываем SVG, показываем QR
+                barcode.style.display = 'none';
+                qrcodeDiv.style.display = 'block';
+                new QRCode(qrcodeDiv, { text: card.card_number, width: 200, height: 200, colorDark: "#000", colorLight: "#fff" });
+            } else {
+                // Скрываем QR, показываем Barcode
+                qrcodeDiv.style.display = 'none';
+                barcode.style.display = 'block';
+                JsBarcode("#barcode", card.card_number, { 
+                    format: "CODE128", 
+                    displayValue: true, 
+                    lineColor: "#000",
+                    background: "#fff" // Фон для штрихкода
+                });
+            }
+        }
+        
+        // 7. Обработчики модального окна
+        closeModal.onclick = () => modal.style.display = "none";
+        window.onclick = e => { if (e.target === modal) modal.style.display = "none"; };
+        
+        // Привязываем функцию удаления к кнопке внутри модального окна
+        deleteBtn.onclick = () => {
+             const cardNumber = modalNumber.textContent.replace("№ ", "");
+             deleteCard(cardNumber);
+        };
+
+        // Запуск при загрузке
         loadCards();
-      } else alert("Ошибка при добавлении!");
-    };
-
-      const deleteBtn = document.getElementById("deleteCard");
-
-deleteBtn.onclick = async () => {
-  const user = tg.initDataUnsafe?.user || { id: "unknown" };
-  const card_number = modalNumber.textContent.replace("№ ", "");
-  if (!confirm("Удалить эту карту?")) return;
-
-  const res = await fetch(API_URL, {
-    method: "DELETE",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ user_id: user.id, card_number }),
-  });
-
-  if (res.ok) {
-    modal.style.display = "none";
-    loadCards();
-  } else {
-    alert("Ошибка при удалении карты!");
-  }
-};
-
-    const modal = document.getElementById("modal");
-    const closeModal = document.getElementById("closeModal");
-    const modalShop = document.getElementById("modal-shop");
-    const modalNumber = document.getElementById("modal-number");
-    const barcode = document.getElementById("barcode");
-    const qrcodeDiv = document.getElementById("qrcode");
-
-    function openModal(card) {
-      modal.style.display = "flex";
-      modalShop.textContent = card.shop_name;
-      modalNumber.textContent = "№ " + card.card_number;
-      qrcodeDiv.innerHTML = "";
-      barcode.innerHTML = "";
-
-      if (card.type === "qr") {
-        new QRCode(qrcodeDiv, { text: card.card_number, width: 200, height: 200 });
-      } else {
-        JsBarcode("#barcode", card.card_number, { format: "CODE128", displayValue: true });
-      }
-    }
-
-    closeModal.onclick = () => modal.style.display = "none";
-    window.onclick = e => { if (e.target === modal) modal.style.display = "none"; };
-
-    loadCards();
-  </script>
+    </script>
 </body>
 </html>
