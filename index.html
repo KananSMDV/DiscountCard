@@ -1,166 +1,90 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Сохранение Карты</title>
-    
-    <script src="https://telegram.org/js/telegram-web-app.js"></script> 
-    
-    <style>
-        body {
-            background-color: var(--tg-theme-bg-color);
-            color: var(--tg-theme-text-color);
-            font-family: system-ui, sans-serif;
-            padding: 20px;
-            text-align: center;
-        }
-        input[type="text"] {
-            width: 90%;
-            padding: 10px;
-            margin: 8px auto;
-            display: block;
-            border: 1px solid var(--tg-theme-hint-color);
-            border-radius: 6px;
-            background-color: var(--tg-theme-secondary-bg-color);
-            color: var(--tg-theme-text-color);
-        }
-        button {
-            background-color: var(--tg-theme-button-color);
-            color: var(--tg-theme-button-text-color);
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            font-size: 16px;
-            cursor: pointer;
-            margin-top: 15px;
-            width: 90%;
-            max-width: 300px;
-        }
-        #add-card-form {
-            /* Скрываем форму по умолчанию */
-            display: none; 
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Discount Card</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #0f0f0f;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+    h1 {
+      margin-bottom: 10px;
+    }
+    input {
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      width: 220px;
+      text-align: center;
+      margin-bottom: 12px;
+    }
+    button {
+      background: #0088cc;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    button:hover {
+      background: #006da1;
+    }
+    #status {
+      margin-top: 15px;
+    }
+  </style>
 </head>
 <body>
+  <h1>Discount Card</h1>
+  <input type="email" id="email" placeholder="Введите email" />
+  <button id="send">Отправить</button>
+  <p id="status"></p>
 
-    <h2>💳 Ваша Дисконтная Карта</h2>
-    
-    <div id="status-message">Загрузка данных пользователя...</div>
-    
-    <form id="add-card-form">
-        <p>У вас пока нет сохраненных карт. Введите данные для создания:</p>
-        <input type="text" id="cardName" placeholder="Название карты (Лента)" required>
-        <input type="text" id="cardNumber" placeholder="Номер или код" required>
-        <button type="submit">Сохранить Карту</button> 
-    </form>
+  <script>
+    const tg = window.Telegram.WebApp;
+    tg.expand();
 
-    <script>
-        const API_BASE_URL = window.location.origin; 
-        
-        const tg = window.Telegram.WebApp;
-        tg.ready(); 
-        tg.expand();
+    document.getElementById("send").addEventListener("click", async () => {
+      const email = document.getElementById("email").value.trim();
+      const status = document.getElementById("status");
 
-        const user = tg.initDataUnsafe?.user;
-        const userId = user?.id; 
+      if (!email) {
+        status.textContent = "⚠️ Введите email!";
+        return;
+      }
 
-        const form = document.getElementById('add-card-form');
-        const statusMessage = document.getElementById('status-message');
+      try {
+        const response = await fetch("https://discount-card.vercel.app/api/save", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email,
+            user: tg.initDataUnsafe.user,
+          }),
+        });
 
-        if (!userId) {
-            statusMessage.innerHTML = '<p style="color: red;">❌ ID пользователя не найден. Запустите через Telegram.</p>';
-            return;
+        const data = await response.json();
+        if (data.success) {
+          status.textContent = "✅ Данные успешно отправлены!";
+        } else {
+          status.textContent = "⚠️ Сервер не подтвердил получение данных.";
         }
-
-        // --------------------------------------------------
-        // ФУНКЦИЯ ПРОВЕРКИ СУЩЕСТВОВАНИЯ ДАННЫХ (GET-запрос)
-        // --------------------------------------------------
-        async function checkExistingCards() {
-            statusMessage.innerHTML = 'Проверка сохраненных карт...';
-
-            try {
-                // Делаем GET-запрос на API
-                const response = await fetch(`${API_BASE_URL}/api/cards?userId=${userId}`);
-                const data = await response.json();
-
-                if (response.ok && data.cards && data.cards.length > 0) {
-                    // Данные ЕСТЬ: Показываем сообщение о наличии карты
-                    const firstCard = data.cards[0];
-                    statusMessage.innerHTML = `
-                        <p style="color: green;">✅ У вас уже есть сохраненная карта:</p>
-                        <b>${firstCard.name}</b>: ${firstCard.number}
-                        <p>Для изменения или добавления другой карты нужен расширенный интерфейс.</p>
-                    `;
-                    form.style.display = 'none'; // Скрываем форму
-                } else {
-                    // Данных НЕТ: Показываем форму для создания
-                    statusMessage.innerHTML = '';
-                    form.style.display = 'block';
-                }
-
-            } catch (error) {
-                console.error('Ошибка проверки карты:', error);
-                statusMessage.innerHTML = '<p style="color: red;">Ошибка связи с сервером. Попробуйте позже.</p>';
-            }
-        }
-        
-        // --------------------------------------------------
-        // ФУНКЦИЯ ДОБАВЛЕНИЯ КАРТ (POST-запрос)
-        // --------------------------------------------------
-        async function addCard(e) {
-            e.preventDefault(); 
-
-            const cardName = document.getElementById('cardName').value.trim();
-            const cardNumber = document.getElementById('cardNumber').value.trim();
-            const saveButton = document.querySelector('#add-card-form button');
-            
-            const barcodeType = 'CODE128'; 
-
-            if (!cardName || !cardNumber) {
-                 tg.showAlert('Заполните все поля!');
-                 return;
-            }
-
-            saveButton.textContent = 'Сохранение...';
-            saveButton.disabled = true;
-
-            try {
-                const response = await fetch(`${API_BASE_URL}/api/cards`, { 
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId, cardName, cardNumber, barcodeType }) 
-                });
-
-                const result = await response.json();
-
-                if (response.ok && result.success) {
-                    tg.showAlert(`✅ Карта "${cardName}" успешно сохранена!`);
-                    document.getElementById('add-card-form').reset(); 
-                    // После успешного сохранения перезапускаем проверку
-                    checkExistingCards(); 
-                } else {
-                    throw new Error(result.details || result.error || 'Ошибка сервера.');
-                }
-
-            } catch (error) {
-                console.error('Ошибка добавления карты:', error);
-                tg.showAlert('❌ Ошибка сохранения: ' + error.message);
-            } finally {
-                saveButton.textContent = 'Сохранить Карту';
-                saveButton.disabled = false;
-            }
-        }
-        
-        form.addEventListener('submit', addCard);
-
-        if (tg.MainButton.isVisible) {
-            tg.MainButton.hide(); 
-        }
-
-        // Запускаем проверку при загрузке
-        checkExistingCards(); 
-    </script>
+      } catch (err) {
+        console.error(err);
+        status.textContent = "❌ Ошибка при отправке данных!";
+      }
+    });
+  </script>
 </body>
 </html>
