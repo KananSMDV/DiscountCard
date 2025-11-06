@@ -4,7 +4,7 @@ import { JWT } from 'google-auth-library';
 
 // Проверьте, что имя листа в Google Sheets именно 'Cards'
 const SHEET_NAME = 'Cards'; 
-const SHEET_INDEX = 0; 
+const SHEET_INDEX = 0; // Первый лист
 
 // Функция инициализации и авторизации
 async function getSpreadsheetSheet() {
@@ -31,7 +31,7 @@ async function getSpreadsheetSheet() {
         throw new Error(`Sheet with index ${SHEET_INDEX} not found.`);
     }
     
-    // Загружаем заголовки, чтобы работать с row.FieldName
+    // Загружаем заголовки для работы с именованными полями
     await sheet.loadHeaderRow(); 
 
     return sheet;
@@ -54,24 +54,25 @@ export default async function handler(req, res) {
         // ТОЛЬКО POST-ЗАПРОС (Добавление новой карты)
         // --------------------------------------------------
         if (req.method === 'POST') {
+            // Ожидаем эти поля от фронтенда
             const { userId, cardName, cardNumber, barcodeType = 'CODE128' } = req.body;
             
             if (!userId || !cardName || !cardNumber) {
                 return res.status(400).json({ error: 'Missing required card data.' });
             }
 
-            // Добавляем новую строку
+            // Добавляем новую строку. Имена полей должны соответствовать заголовкам Google Sheets!
             await sheet.addRow({
                 UserID: userId,
                 CardName: cardName,
                 CardNumber: cardNumber,
-                BarcodeType: barcodeType // Сохраняем, даже если значение жестко задано
+                BarcodeType: barcodeType 
             });
 
             return res.status(201).json({ success: true, message: 'Card added successfully.', card: req.body });
         }
 
-        // Блокируем GET и другие методы
+        // Блокируем GET и другие методы, пока не понадобится
         return res.status(405).json({ error: 'Method Not Allowed. Use POST.' });
 
     } catch (error) {
