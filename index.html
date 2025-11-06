@@ -3,17 +3,20 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Тест Сохранения Карт</title>
+    <title>Мои Скидочные Карты</title>
     
     <script src="https://telegram.org/js/telegram-web-app.js"></script> 
     
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/easyqrcodejs@4.5.3/dist/easyqrcode.min.js"></script>
+
     <style>
+        /* Общие стили и адаптация к Telegram-теме */
         body {
             background-color: var(--tg-theme-bg-color, #f4f4f5);
             color: var(--tg-theme-text-color, #1f1f1f);
             font-family: system-ui, sans-serif;
             padding: 20px;
-            text-align: center;
         }
         input[type="text"] {
             width: 90%;
@@ -26,9 +29,10 @@
             background-color: var(--tg-theme-secondary-bg-color, #ffffff);
             color: var(--tg-theme-text-color, #1f1f1f);
         }
-        button {
-            background-color: var(--tg-theme-button-color, #0088cc);
-            color: var(--tg-theme-button-text-color, white);
+        /* Стиль для обычной кнопки */
+        button[type="submit"] {
+            background-color: var(--tg-theme-button-color, #007aff);
+            color: var(--tg-theme-button-text-color, #ffffff);
             border: none;
             padding: 10px 20px;
             border-radius: 8px;
@@ -38,20 +42,89 @@
             width: 90%;
             max-width: 300px;
         }
+        .card-list {
+            list-style: none;
+            padding: 0;
+            text-align: left;
+        }
+        .card-item {
+            background-color: var(--tg-theme-secondary-bg-color, #ffffff);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 10px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+        .card-name {
+            font-weight: bold;
+            font-size: 1.1em;
+            color: var(--tg-theme-link-color, #007aff);
+            display: block;
+        }
+        .card-number {
+            font-family: 'Courier New', Courier, monospace;
+            margin-top: 5px;
+            display: block;
+            color: var(--tg-theme-hint-color, #777);
+        }
+        /* Стиль для выбора типа кода */
+        .code-selector {
+            display: inline-block;
+            padding: 8px 12px;
+            margin-right: 10px;
+            border-radius: 8px;
+            border: 1px solid var(--tg-theme-hint-color, #ccc);
+            cursor: pointer;
+            background-color: var(--tg-theme-secondary-bg-color, #ffffff);
+            color: var(--tg-theme-text-color);
+        }
+        input[type="radio"]:checked + .code-selector {
+            background-color: var(--tg-theme-button-color, #007aff);
+            color: var(--tg-theme-button-text-color, #ffffff);
+            border-color: var(--tg-theme-button-color, #007aff);
+        }
+        #barcode-preview { 
+            display: block; 
+            margin: 10px auto;
+        }
+        .code-container {
+            text-align: center;
+            padding: 10px 0;
+            overflow: hidden; /* Предотвращаем горизонтальный скролл */
+        }
     </style>
 </head>
 <body>
 
-    <h2>💾 Тест: Сохранение Карты</h2>
-    <p>Проверка отправки данных на Vercel API.</p>
+    <h2>💳 Мои Скидочные Карты</h2>
     
-    <form id="add-card-form">
-        <input type="text" id="cardName" placeholder="Название карты (Магнит)" required>
-        <input type="text" id="cardNumber" placeholder="Номер или код (только цифры)" required>
-        <button type="submit">Сохранить Карту</button> 
-    </form>
+    <div id="card-display">
+        <p>Загрузка ваших карт...</p>
+    </div>
 
-    <div id="status-message" style="margin-top: 20px;"></div>
+    <hr>
+
+    <h3>➕ Добавить Карту</h3>
+    <form id="add-card-form">
+        <input type="text" id="cardName" placeholder="Название (Пятерочка, Ozon)" required>
+        <input type="text" id="cardNumber" placeholder="Номер или код карты" required>
+        
+        <div style="margin: 15px 0; text-align: left; max-width: 90%; margin-left: auto; margin-right: auto;">
+            <p style="margin-bottom: 5px; color: var(--tg-theme-hint-color);">Тип кода:</p>
+            <div id="barcode-type-selector">
+                <input type="radio" id="type_qr" name="barcodeType" value="QR" checked style="display: none;">
+                <label for="type_qr" class="code-selector">QR Code</label>
+
+                <input type="radio" id="type_code128" name="barcodeType" value="CODE128" style="display: none;">
+                <label for="type_code128" class="code-selector">Штрихкод</label>
+            </div>
+        </div>
+
+        <div id="preview-container" class="code-container">
+             <canvas id="barcode-preview" style="max-width: 100%; height: 100px;"></canvas>
+        </div>
+        
+        <button type="submit">Сохранить Карту</button>
+    </form>
 
     <script>
         const API_BASE_URL = window.location.origin; 
@@ -64,40 +137,128 @@
         const userId = user?.id;
 
         if (!userId) {
-            document.getElementById('status-message').innerHTML = '<p style="color: red;">❌ ID пользователя Telegram не определён.</p>';
+            document.getElementById('card-display').innerHTML = '<p style="color: red;">❌ Ошибка: ID пользователя Telegram не определён.</p>';
             return;
         }
+        
+        // --------------------------------------------------
+        // ГЕНЕРАЦИЯ КОДА (QR/ШТРИХКОД)
+        // --------------------------------------------------
+        function renderCode(containerId, value, type) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
 
+            container.innerHTML = '';
+            if (!value || !type) return;
+
+            const color = tg.colorScheme === 'dark' ? '#fff' : '#000';
+
+            if (type === 'QR') {
+                container.style.height = '150px';
+                
+                new QRCode(container, {
+                    text: value,
+                    width: 150,
+                    height: 150,
+                    colorDark: color,
+                    colorLight: "transparent",
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+            } else if (type === 'CODE128') {
+                container.style.height = '100px';
+                const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+                svg.style.maxWidth = '100%';
+                container.appendChild(svg);
+                
+                if (window.JsBarcode) {
+                    JsBarcode(svg, value, {
+                        format: "CODE128",
+                        displayValue: true,
+                        margin: 5,
+                        width: 2,
+                        height: 100,
+                        background: "transparent",
+                        lineColor: color
+                    });
+                }
+            }
+        }
+
+        // --------------------------------------------------
+        // ФУНКЦИЯ ОТОБРАЖЕНИЯ КАРТ (GET-запрос)
+        // --------------------------------------------------
+        async function loadCards() {
+            const display = document.getElementById('card-display');
+            display.innerHTML = '<p>Загрузка...</p>';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/cards?userId=${userId}`);
+                const data = await response.json();
+
+                if (data.cards && data.cards.length > 0) {
+                    let listHtml = '<ul class="card-list">';
+                    data.cards.forEach((card, index) => {
+                        const codeId = `saved-code-container-${index}`;
+                        listHtml += `
+                            <li class="card-item">
+                                <span class="card-name">${card.name} (${card.barcodeType})</span>
+                                <span class="card-number">${card.number}</span>
+                                <div id="${codeId}" class="code-container" data-value="${card.number}" data-type="${card.barcodeType}">
+                                    </div>
+                            </li>
+                        `;
+                    });
+                    listHtml += '</ul>';
+                    display.innerHTML = listHtml;
+                    
+                    // Рендеринг сохраненных кодов
+                    document.querySelectorAll('.code-container').forEach(container => {
+                        const value = container.getAttribute('data-value');
+                        const type = container.getAttribute('data-type');
+                        renderCode(container.id, value, type);
+                    });
+
+                } else {
+                    display.innerHTML = '<p>У вас пока нет сохраненных карт.</p>';
+                }
+
+            } catch (error) {
+                console.error('Ошибка при загрузке карт:', error);
+                tg.showAlert('Не удалось загрузить карты. Проверьте API.');
+                display.innerHTML = '<p style="color: red;">Ошибка загрузки данных.</p>';
+            }
+        }
+
+        // --------------------------------------------------
+        // ФУНКЦИЯ ДОБАВЛЕНИЯ КАРТ (POST-запрос)
+        // --------------------------------------------------
         async function addCard(e) {
             e.preventDefault(); 
 
             const cardName = document.getElementById('cardName').value.trim();
             const cardNumber = document.getElementById('cardNumber').value.trim();
+            const barcodeType = document.querySelector('input[name="barcodeType"]:checked').value;
             const saveButton = document.querySelector('#add-card-form button');
-            const barcodeType = 'CODE128'; 
 
-            if (!cardName || !cardNumber) {
-                 tg.showAlert('Заполните все поля!');
-                 return;
-            }
+            if (!cardName || !cardNumber) return tg.showAlert('Заполните все поля!');
 
             saveButton.textContent = 'Сохранение...';
             saveButton.disabled = true;
 
             try {
-                // ВАЖНО: АДРЕС API ИЗМЕНЕН НА /api/cards
                 const response = await fetch(`${API_BASE_URL}/api/cards`, { 
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    // Отправляем данные в формате, который ждет cards.js
                     body: JSON.stringify({ userId, cardName, cardNumber, barcodeType }) 
                 });
 
                 const result = await response.json();
 
-                if (response.ok) {
-                    tg.showAlert(`✅ Карта "${cardName}" успешно сохранена!`);
+                if (response.ok && result.success) {
+                    tg.showAlert(`✅ Карта "${cardName}" успешно добавлена!`);
                     document.getElementById('add-card-form').reset(); 
+                    renderCode('barcode-preview', null, null); // Очищаем предпросмотр
+                    loadCards(); // Перезагружаем список
                 } else {
                     throw new Error(result.details || result.error || 'Ошибка сервера.');
                 }
@@ -111,12 +272,28 @@
             }
         }
         
+        // --------------------------------------------------
+        // ЛОГИКА ПРЕДПРОСМОТРА И ИНИЦИАЛИЗАЦИЯ
+        // --------------------------------------------------
+        const inputCardNumber = document.getElementById('cardNumber');
+        const typeSelector = document.getElementById('barcode-type-selector');
         const form = document.getElementById('add-card-form');
+
+        const updatePreview = () => {
+            const value = inputCardNumber.value.trim();
+            const type = document.querySelector('input[name="barcodeType"]:checked').value;
+            renderCode('barcode-preview', value, type); 
+        };
+
+        inputCardNumber.addEventListener('input', updatePreview);
+        typeSelector.addEventListener('change', updatePreview);
+        
         form.addEventListener('submit', addCard);
 
-        if (tg.MainButton.isVisible) {
-            tg.MainButton.hide(); 
-        }
+        // Инициализация
+        loadCards(); 
+        if (tg.MainButton.isVisible) tg.MainButton.hide();
+
     </script>
 </body>
 </html>
