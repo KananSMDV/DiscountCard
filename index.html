@@ -1,123 +1,177 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Мои скидочные карты</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Discount Cards</title>
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     body {
-      font-family: "Inter", sans-serif;
-      background: #121212;
-      color: white;
+      font-family: system-ui, sans-serif;
+      background: var(--tg-theme-bg-color, #f5f5f5);
+      color: var(--tg-theme-text-color, #222);
       margin: 0;
       padding: 20px;
     }
-    h1 { text-align: center; margin-bottom: 20px; }
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
     .card {
-      border-radius: 12px;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
       padding: 16px;
       margin-bottom: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-      transition: transform 0.2s;
+      cursor: pointer;
+      transition: transform 0.15s ease;
     }
-    .card:hover { transform: scale(1.02); }
-    .card img { width: 50px; height: 50px; border-radius: 8px; margin-right: 12px; }
-    form {
+    .card:hover {
+      transform: scale(1.02);
+    }
+    .form {
+      margin-top: 20px;
       display: flex;
       flex-direction: column;
       gap: 10px;
-      margin-bottom: 25px;
     }
-    input {
+    input, button {
       padding: 10px;
-      border: none;
-      border-radius: 8px;
       font-size: 16px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
     }
     button {
-      background: #0088cc;
+      background: var(--tg-theme-button-color, #2a9d8f);
+      color: var(--tg-theme-button-text-color, #fff);
       border: none;
-      padding: 10px;
-      border-radius: 8px;
-      color: white;
-      font-weight: 600;
       cursor: pointer;
-      transition: 0.3s;
     }
-    button:hover { background: #006da1; }
+    /* Modal */
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.5);
+    }
+    .modal-content {
+      background: #fff;
+      border-radius: 16px;
+      padding: 20px;
+      width: 90%;
+      max-width: 400px;
+      text-align: center;
+    }
+    .modal-content h3 {
+      margin-top: 0;
+    }
+    .modal-content button {
+      margin-top: 10px;
+      width: 100%;
+    }
+    svg {
+      margin-top: 10px;
+      width: 100%;
+    }
   </style>
 </head>
 <body>
-  <h1>Мои скидочные карты</h1>
-
-  <form id="addForm">
-    <input type="text" id="shop_name" placeholder="Название магазина" required>
-    <input type="text" id="card_number" placeholder="Номер карты" required>
-    <input type="text" id="color" placeholder="Цвет (например, #ff5733)" value="#0088cc">
-    <input type="text" id="logo_url" placeholder="URL логотипа (необязательно)">
-    <button type="submit">Добавить карту</button>
-  </form>
-
+  <h2>Мои скидочные карты</h2>
   <div id="cards"></div>
+
+  <div class="form">
+    <input id="shop_name" placeholder="Название магазина" />
+    <input id="card_number" placeholder="Номер карты" />
+    <input id="color" type="color" value="#2a9d8f" />
+    <button id="addBtn">Добавить карту</button>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal" id="modal">
+    <div class="modal-content">
+      <h3 id="modal-shop"></h3>
+      <p id="modal-number"></p>
+      <svg id="barcode"></svg>
+      <button id="closeModal">Закрыть</button>
+    </div>
+  </div>
 
   <script>
     const tg = window.Telegram.WebApp;
     tg.expand();
-    const apiUrl = "https://discount-cards.vercel.app/api/save";
+
+    const API_URL = "https://discount-card.vercel.app/api/save";
+    const cardsDiv = document.getElementById("cards");
 
     async function loadCards() {
-      const res = await fetch(apiUrl);
+      const res = await fetch(API_URL);
       const cards = await res.json();
-      const list = document.getElementById("cards");
-      list.innerHTML = "";
+      cardsDiv.innerHTML = "";
       cards.forEach(c => {
         const div = document.createElement("div");
         div.className = "card";
-        div.style.background = c.color || "#2a2a2a";
-        div.innerHTML = `
-          <div style="display:flex;align-items:center;">
-            ${c.logo_url ? `<img src="${c.logo_url}" alt="logo">` : ""}
-            <div>
-              <strong>${c.shop_name}</strong><br>
-              <small>${c.card_number}</small>
-            </div>
-          </div>
-        `;
-        list.appendChild(div);
+        div.style.background = c.color || "#2a9d8f";
+        div.innerHTML = `<strong>${c.shop_name}</strong>`;
+        div.onclick = () => openModal(c);
+        cardsDiv.appendChild(div);
       });
     }
 
-    document.getElementById("addForm").addEventListener("submit", async e => {
-      e.preventDefault();
+    document.getElementById("addBtn").onclick = async () => {
       const shop_name = document.getElementById("shop_name").value.trim();
       const card_number = document.getElementById("card_number").value.trim();
-      const color = document.getElementById("color").value.trim();
-      const logo_url = document.getElementById("logo_url").value.trim();
+      const color = document.getElementById("color").value;
+      if (!shop_name || !card_number) {
+        alert("Заполните все поля!");
+        return;
+      }
 
-      const res = await fetch(apiUrl, {
+      const user = tg.initDataUnsafe?.user || { id: "unknown", username: "anonymous" };
+      const res = await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          user: tg.initDataUnsafe.user,
-          shop_name,
-          card_number,
-          color,
-          logo_url
-        })
+        body: JSON.stringify({ user, shop_name, card_number, color }),
       });
-
-      const data = await res.json();
-      if (data.success) {
-        tg.HapticFeedback.notificationOccurred("success");
+      if (res.ok) {
+        document.getElementById("shop_name").value = "";
+        document.getElementById("card_number").value = "";
         loadCards();
       } else {
-        alert("Ошибка при добавлении карты!");
+        alert("Ошибка при добавлении!");
       }
-    });
+    };
+
+    // Modal logic
+    const modal = document.getElementById("modal");
+    const closeModal = document.getElementById("closeModal");
+    const modalShop = document.getElementById("modal-shop");
+    const modalNumber = document.getElementById("modal-number");
+    const barcode = document.getElementById("barcode");
+
+    function openModal(card) {
+      modal.style.display = "flex";
+      modalShop.textContent = card.shop_name;
+      modalNumber.textContent = "№ " + card.card_number;
+      JsBarcode("#barcode", card.card_number, { format: "CODE128", displayValue: true });
+    }
+
+    closeModal.onclick = () => {
+      modal.style.display = "none";
+      barcode.innerHTML = "";
+    };
+
+    window.onclick = (e) => {
+      if (e.target === modal) {
+        modal.style.display = "none";
+        barcode.innerHTML = "";
+      }
+    };
 
     loadCards();
   </script>
