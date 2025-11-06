@@ -9,19 +9,21 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
     <style>
-        /* 1. Обновленные Цвета и Переменные */
+        /* 1. Цвета и Переменные в Стиле Telegram (Темная Тема) */
         :root {
-            --tg-bg: #121212; /* Более мягкий фон */
-            --tg-card: #1e1e1e; /* Фон для карточек и форм */
-            --tg-text: #e0e0e0; /* Светлый текст */
-            --tg-text-secondary: #a0a0a0; /* Вторичный текст */
-            --tg-accent: #3498db; /* Чистый синий акцент */
+            --tg-bg: #1c1c1d; /* Основной темный фон (менее черный) */
+            --tg-card: #2c2c2e; /* Фон для карточек и форм (Telegram Cell Background) */
+            --tg-text: #ffffff; /* Светлый текст */
+            --tg-text-secondary: #8e8e93; /* Вторичный текст */
+            --tg-accent: #007aff; /* Классический синий акцент Telegram */
+            --tg-red: #ff3b30; /* Красный для удаления */
             --shadow-light: rgba(255, 255, 255, 0.05);
-            --shadow-dark: rgba(0, 0, 0, 0.5);
+            --shadow-dark: rgba(0, 0, 0, 0.4);
+            --border-color: #38383a; /* Границы */
         }
 
         body {
-            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+            font-family: system-ui, -apple-system, 'San Francisco', 'Roboto', sans-serif;
             background: var(--tg-bg);
             color: var(--tg-text);
             margin: 0;
@@ -30,50 +32,48 @@
             min-height: 100vh;
         }
 
-        /* 2. Шапка (Header) */
+        /* 2. Шапка (Header) - более плоский стиль Telegram */
         header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 16px 20px;
-            font-size: 24px;
-            background: var(--tg-bg);
-            border-bottom: 1px solid #2a2a2a;
-            font-weight: 700;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            padding: 14px 20px;
+            font-size: 20px;
+            background: var(--tg-card); /* Фон как у "ячейки" */
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 600;
+            box-shadow: none; /* Убрали тень для более плоского вида */
             position: sticky;
             top: 0;
             z-index: 50;
         }
 
         #addBtn {
-            font-size: 32px;
+            font-size: 30px;
             border: none;
             background: none;
             cursor: pointer;
             color: var(--tg-accent);
-            transition: transform 0.2s, color 0.2s;
+            transition: transform 0.2s;
             line-height: 1;
             padding: 0;
         }
         #addBtn:hover {
-            transform: scale(1.15) rotate(90deg);
-            color: #5dade2;
+            transform: scale(1.15);
         }
 
-        /* 3. Панель добавления (Form) */
+        /* 3. Панель добавления (Form) - теперь как модальный лист */
         .form {
             position: fixed;
             bottom: -100%;
             left: 0;
             width: 100%;
             background: var(--tg-card);
-            border-top: none;
             display: flex;
             flex-direction: column;
             gap: 15px;
             padding: 25px 20px 40px;
-            border-radius: 25px 25px 0 0;
+            border-radius: 20px 20px 0 0; /* Мягкие скругления */
             box-shadow: 0 -8px 30px var(--shadow-dark);
             transition: bottom 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             z-index: 100;
@@ -91,183 +91,128 @@
         }
 
         input, select {
-            padding: 15px;
-            font-size: 17px;
-            border-radius: 12px;
-            border: 1px solid #333;
-            background: #252525;
+            padding: 12px; /* Чуть меньше паддинг */
+            font-size: 16px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            background: var(--tg-bg); /* Более темный фон для полей */
             color: var(--tg-text);
-            transition: border-color 0.3s;
         }
         input:focus, select:focus {
             border-color: var(--tg-accent);
-            background: #282828;
+            background: var(--tg-bg);
         }
         ::placeholder {
             color: var(--tg-text-secondary);
-            opacity: 0.7;
+            opacity: 0.8;
         }
 
         button#saveCard {
-            padding: 15px;
-            font-size: 18px;
-            border-radius: 12px;
+            padding: 12px;
+            font-size: 16px;
+            border-radius: 10px;
             background: var(--tg-accent);
             color: #fff;
-            font-weight: 700;
-            cursor: pointer;
-            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
-            transition: background 0.2s, transform 0.1s;
-        }
-        button#saveCard:active {
-            transform: scale(0.98);
-            box-shadow: none;
+            font-weight: 600;
+            box-shadow: none; /* Убрали тень */
         }
 
         .colors {
             display: flex;
-            gap: 12px;
-            margin-top: 10px;
+            gap: 10px;
+            margin-top: 5px;
             flex-wrap: wrap;
         }
 
         .color {
-            width: 36px;
-            height: 36px;
+            width: 34px;
+            height: 34px;
             border-radius: 50%;
             cursor: pointer;
             border: 3px solid transparent;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.4);
             transition: transform 0.2s, border-color 0.2s;
         }
-        .color:hover { transform: scale(1.1); }
         .color.active {
-            border-color: #fff;
+            border-color: var(--tg-accent); /* Выделение акцентным цветом */
             transform: scale(1.1);
-            box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+            box-shadow: 0 0 5px var(--tg-accent);
         }
 
         /* 4. Список карт */
         #cards {
             display: flex;
             flex-direction: column;
-            gap: 16px;
-            padding: 20px;
+            gap: 12px; /* Меньше расстояние между картами */
+            padding: 16px;
         }
 
         .card {
             position: relative;
             background: var(--tg-card);
-            border-radius: 20px;
-            padding: 20px;
+            border-radius: 14px; /* Мягкое скругление */
+            padding: 18px;
             color: #fff;
-            /* Красивая мягкая тень */
-            box-shadow: 0 6px 20px rgba(0,0,0,0.6), inset 0 0 0 1px #2a2a2a;
-            cursor: pointer;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 12px var(--shadow-dark); /* Мягкая тень */
+            transition: transform 0.2s ease;
         }
 
-        .card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.7); }
+        .card:hover { transform: translateY(-3px); }
 
-        .card .shop { font-size: 20px; font-weight: 700; margin-bottom: 5px; }
+        .card .shop { font-size: 18px; font-weight: 700; margin-bottom: 3px; }
         .card .number {
-            opacity: 0.9;
-            font-size: 16px;
+            opacity: 0.7;
+            font-size: 14px;
             text-align: right;
-            margin-top: 10px;
+            margin-top: 8px;
             font-family: monospace;
         }
 
         .delete-btn {
-            position: absolute;
-            top: 10px;
-            right: 12px;
-            background: rgba(255, 0, 0, 0.1);
-            border: none;
-            color: #ff6b6b;
-            font-size: 24px;
-            width: 30px;
-            height: 30px;
-            line-height: 1;
-            border-radius: 50%;
-            cursor: pointer;
-            transition: transform 0.2s, background 0.2s;
-        }
-        .delete-btn:hover {
-            transform: scale(1.2) rotate(15deg);
-            background: rgba(255, 0, 0, 0.2);
+            background: none;
+            color: var(--tg-red);
+            font-size: 22px;
         }
 
         /* 5. Модальное окно (Modal) */
         .modal {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            background: rgba(0,0,0,0.75);
-            z-index: 1000;
+            background: rgba(0,0,0,0.8);
         }
 
         .modal-content {
-            background: #252525;
-            border-radius: 25px;
-            padding: 30px;
-            width: 90%;
-            max-width: 350px;
-            text-align: center;
-            color: var(--tg-text);
+            background: var(--tg-card); /* Фон как у карточек */
+            border-radius: 20px;
+            padding: 24px;
+            max-width: 320px;
             box-shadow: 0 10px 30px var(--shadow-dark);
-            animation: fadeIn 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: scale(0.9); }
-            to { opacity: 1; transform: scale(1); }
-        }
+        .modal-content h3 { margin-top: 0; font-size: 20px; color: var(--tg-text); }
 
-        .modal-content h3 { margin-top: 0; font-size: 22px; font-weight: 700; color: #fff; }
-
-        /* Стили для кода (QR/Barcode) */
+        /* Стили для кода (QR/Barcode) - ГЛАВНОЕ ИЗМЕНЕНИЕ */
         #qrcode, #barcode {
             margin: 20px auto 10px;
             padding: 10px;
-            background: #111;
-            border-radius: 10px;
+            background: #ffffff; /* !!! БЕЛЫЙ ФОН для кода */
+            border-radius: 8px;
             display: flex;
             justify-content: center;
-            box-shadow: inset 0 0 5px rgba(0,0,0,0.5);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.5);
         }
-        #qrcode > canvas {
-            border-radius: 8px;
-        }
-        #barcode {
-            width: 100%;
-            height: 100px;
+        #qrcode canvas {
+            background: #ffffff !important; /* Гарантируем белый фон QR */
         }
         #barcode svg { max-width: 100%; height: auto; }
+        #barcode path { fill: #000; } /* Черные линии штрихкода */
 
 
         #modal-number {
-            margin-top: 15px;
+            color: #fff;
             opacity: 0.9;
-            font-size: 17px;
-            font-weight: 500;
-            letter-spacing: 1px;
         }
 
         #closeModal {
-            margin-top: 20px;
             background: var(--tg-accent);
-            color: #fff;
-            padding: 12px 25px;
-            font-size: 16px;
-            border-radius: 12px;
-            font-weight: 600;
-            transition: background 0.2s;
-            box-shadow: 0 4px 10px rgba(52, 152, 219, 0.4);
         }
     </style>
 </head>
@@ -287,7 +232,7 @@
         </select>
         <label>Цвет карты:</label>
         <div class="colors" id="colorSelect">
-            <div class="color active" style="background:#e63946" data-color="#e63946"></div> <div class="color" style="background:#f1fa8c" data-color="#f1fa8c"></div> <div class="color" style="background:#06d6a0" data-color="#06d6a0"></div> <div class="color" style="background:#118ab2" data-color="#118ab2"></div> <div class="color" style="background:#9b5de5" data-color="#9b5de5"></div> <div class="color" style="background:#ff9f1c" data-color="#ff9f1c"></div> </div>
+            <div class="color active" style="background:#e74c3c" data-color="#e74c3c"></div> <div class="color" style="background:#f1c40f" data-color="#f1c40f"></div> <div class="color" style="background:#2ecc71" data-color="#2ecc71"></div> <div class="color" style="background:#3498db" data-color="#3498db"></div> <div class="color" style="background:#9b59b6" data-color="#9b59b6"></div> <div class="color" style="background:#e67e22" data-color="#e67e22"></div> <div class="color" style="background:#ffffff" data-color="#ffffff"></div> </div>
         <button id="saveCard">Сохранить карту</button>
     </div>
 
@@ -307,13 +252,13 @@
         const tg = window.Telegram?.WebApp || {};
         tg.expand?.();
 
-        const API_URL = "https://discount-cards.vercel.app/api/save"; // Не используется в текущей логике
+        const API_URL = "https://discount-cards.vercel.app/api/save";
         const cardsDiv = document.getElementById("cards");
         const form = document.getElementById("form");
         const addBtn = document.getElementById("addBtn");
         const saveCard = document.getElementById("saveCard");
 
-        let selectedColor = "#e63946";
+        let selectedColor = "#e74c3c"; // Обновленный начальный цвет
         let cards = [];
 
         document.querySelectorAll(".color").forEach(c => {
@@ -343,11 +288,19 @@
             cards.forEach((c, i) => {
                 const div = document.createElement("div");
                 div.className = "card";
-                div.style.background = c.color || "#2a9d8f";
+                // Если цвет белый, ставим цвет текста черным для контраста
+                const textColor = (c.color === '#ffffff') ? '#000000' : '#ffffff';
+
+                div.style.background = c.color || "#2ecc71";
+                div.style.color = textColor; // Применяем цвет текста
+                
+                // Стиль для номера карты, если она белая
+                const numberStyle = (c.color === '#ffffff') ? 'opacity: 0.6; color: #000;' : 'opacity: 0.7; color: #fff;';
+
                 div.innerHTML = `
-                    <button class="delete-btn" data-index="${i}">✕</button>
+                    <button class="delete-btn" data-index="${i}" style="color: ${textColor === '#000000' ? '#ff4040' : '#ff6b6b'};">✕</button>
                     <div class="shop">${c.shop_name}</div>
-                    <div class="number">№ ${c.card_number}</div>
+                    <div class="number" style="${numberStyle}">№ ${c.card_number}</div>
                 `;
                 div.querySelector(".delete-btn").onclick = (e) => {
                     e.stopPropagation();
@@ -377,7 +330,6 @@
             saveLocal();
             renderCards();
 
-            // Сброс полей
             document.getElementById("shop_name").value = "";
             document.getElementById("card_number").value = "";
             form.classList.remove("active");
@@ -403,15 +355,20 @@
                     text: card.card_number,
                     width: 200,
                     height: 200,
-                    colorDark: "#fff",
-                    colorLight: "#111",
+                    colorDark: "#000", // Черный код
+                    colorLight: "#fff", // Белый фон
                 });
-                barcode.style.display = 'none'; // Скрыть баркод
-                qrcodeDiv.style.display = 'flex'; // Показать QR
+                barcode.style.display = 'none';
+                qrcodeDiv.style.display = 'flex';
             } else {
-                JsBarcode("#barcode", card.card_number, { format: "CODE128", displayValue: true, lineColor: "#fff", background: "#111" });
-                barcode.style.display = 'block'; // Показать баркод
-                qrcodeDiv.style.display = 'none'; // Скрыть QR
+                JsBarcode("#barcode", card.card_number, { 
+                    format: "CODE128", 
+                    displayValue: true, 
+                    lineColor: "#000", // Черные линии
+                    background: "#ffffff" // Белый фон
+                });
+                barcode.style.display = 'block';
+                qrcodeDiv.style.display = 'none';
             }
         }
 
