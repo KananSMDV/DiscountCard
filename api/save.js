@@ -38,16 +38,16 @@ export default async function handler(req, res) {
   }
 
   // Получить список всех карт
-  if (req.method === "GET") {
-    try {
-      const rows = await sheet.getRows();
-      const cards = rows.map(r => ({
-        shop_name: r.shop_name,
-        card_number: r.card_number,
-        color: r.color,
-        logo_url: r.logo_url,
-      }));
-      return res.status(200).json(cards);
+if (req.method === "GET") {
+    try {
+      const rows = await sheet.getRows();
+      const cards = rows.map(r => ({
+        shop_name: r.shop_name,
+        card_number: r.card_number,
+        color: r.color,
+        logo_url: r.logo_url,
+      }));
+      return res.status(200).json(cards);
     } catch (err) {
       console.error("❌ Ошибка при чтении:", err);
       return res.status(500).json({ error: err.message });
