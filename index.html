@@ -11,23 +11,28 @@
     <style>
         /* Переменные для Dark Mode */
         :root {
-            --bg-dark: #1e1e1e; /* Основной фон */
-            --bg-card-dark: #2a2a2a; /* Фон карточек и форм */
+            --bg-dark: #171717; /* Более насыщенный темный фон */
+            --bg-card-dark: #2c2c2c; /* Фон карточек и форм */
+            --bg-input: #383838; /* Фон для полей ввода */
             --text-light: #ffffff;
-            --text-subtle: #aaaaaa;
+            --text-subtle: #b0b0b0;
             --accent-color: var(--tg-theme-button-color, #4a90e2); /* Используем цвет кнопки Telegram */
-            --border-color: #333;
-            --shadow-color: rgba(0, 0, 0, 0.4);
+            --border-color: #444;
+            --shadow-color-subtle: rgba(0, 0, 0, 0.2);
+            --shadow-color-strong: rgba(0, 0, 0, 0.7);
         }
 
         /* Общие стили */
         body {
-            font-family: system-ui, -apple-system, sans-serif;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
             background: var(--bg-dark);
             color: var(--text-light);
             margin: 0;
             padding: 0;
             transition: background 0.3s, color 0.3s;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
 
         header {
@@ -35,52 +40,74 @@
             justify-content: space-between;
             align-items: center;
             padding: 16px 20px;
-            font-size: 22px;
+            font-size: 24px; /* Увеличили */
             background: var(--bg-dark);
             border-bottom: 1px solid var(--border-color);
-            font-weight: 600;
+            font-weight: 700; /* Более жирный */
+            position: sticky; /* Закрепляем шапку */
+            top: 0;
+            z-index: 50;
         }
 
         #addBtn {
-            font-size: 28px;
+            font-size: 30px; /* Увеличили */
             border: none;
             background: none;
             cursor: pointer;
             color: var(--accent-color);
             padding: 0;
             line-height: 1;
+            transition: transform 0.2s ease;
+        }
+        #addBtn:active {
+            transform: scale(0.9);
         }
 
         /* Форма добавления */
         .form {
             display: none;
             flex-direction: column;
-            gap: 12px;
+            gap: 15px; /* Увеличили отступ */
             padding: 20px;
             background: var(--bg-card-dark);
             border-bottom: 1px solid var(--border-color);
+            box-shadow: 0 4px 10px var(--shadow-color-subtle);
         }
 
         input, select {
-            padding: 12px;
+            padding: 14px; /* Увеличили отступы */
             font-size: 16px;
-            border-radius: 12px;
+            border-radius: 10px; /* Сделали чуть меньше */
             border: 1px solid var(--border-color);
-            background: #333; /* Более темный фон для полей */
+            background: var(--bg-input); 
             color: var(--text-light);
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.3); /* Легкая подсветка */
         }
         input::placeholder {
             color: var(--text-subtle);
+            opacity: 0.8;
+        }
+        select {
+            appearance: none; /* Убираем стандартную стрелку */
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23b0b0b0'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 15px center;
+            background-size: 18px;
         }
 
         /* Кнопки */
         button {
-            padding: 12px;
+            padding: 14px;
             font-size: 16px;
-            border-radius: 12px;
+            border-radius: 10px;
             border: none;
             cursor: pointer;
-            transition: background 0.2s;
+            transition: background 0.2s, transform 0.1s;
         }
         #saveCard {
             background: var(--accent-color);
@@ -88,36 +115,41 @@
             font-weight: 600;
         }
         #saveCard:active {
+            transform: scale(0.99);
             filter: brightness(0.9);
         }
 
         /* Выбор цвета */
         .colors {
             display: flex;
-            gap: 10px;
+            gap: 12px; /* Увеличили отступ */
             margin-top: 5px;
+            justify-content: space-around; /* Центрируем и распределяем */
+            padding: 5px 0;
         }
 
         .color {
-            width: 32px;
-            height: 32px;
+            width: 36px; /* Увеличили размер */
+            height: 36px;
             border-radius: 50%;
             cursor: pointer;
-            border: 2px solid transparent;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            border: 3px solid transparent; /* Увеличили толщину обводки */
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border 0.2s ease;
         }
         .color:hover { transform: scale(1.1); }
         .color.active { 
-            border: 2px solid var(--text-light); 
-            box-shadow: 0 0 0 2px var(--bg-dark); /* Обводка для контраста */
+            border: 3px solid var(--text-light); 
+            box-shadow: 0 0 0 3px var(--bg-card-dark), 0 0 10px rgba(255, 255, 255, 0.3); /* Добавили мягкое свечение */
+            transform: scale(1.05);
         }
 
         /* Секция карт */
         #cards {
             display: flex;
             flex-direction: column;
-            gap: 16px;
-            padding: 16px;
+            gap: 18px; /* Увеличили отступ */
+            padding: 20px;
+            flex-grow: 1;
         }
 
         .card {
@@ -125,52 +157,58 @@
             display: grid;
             grid-template-areas: "shop delete" "number number";
             align-items: center;
-            border-radius: 20px;
-            padding: 20px;
+            border-radius: 15px; /* Уменьшили для более современного вида */
+            padding: 20px 25px; /* Увеличили горизонтальный отступ */
             color: var(--text-light);
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s ease;
-            box-shadow: 0 6px 16px var(--shadow-color);
+            box-shadow: 0 8px 18px var(--shadow-color-strong); /* Более выразительная тень */
+            background-size: cover; /* Для возможных фонов */
+            background-position: center;
         }
 
         .card:active {
-            transform: translateY(1px);
-            box-shadow: 0 4px 12px var(--shadow-color);
+            transform: translateY(2px) scale(0.99); /* Мягкое нажатие */
+            box-shadow: 0 4px 12px var(--shadow-color-strong);
         }
 
         .card .shop {
             grid-area: shop;
-            font-size: 20px;
-            letter-spacing: 0.5px;
+            font-size: 22px; /* Увеличили */
+            letter-spacing: 0.8px;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5); /* Тень для текста */
         }
 
         .card .number {
             grid-area: number;
-            opacity: 0.9;
-            font-size: 14px;
+            opacity: 0.8;
+            font-size: 16px; /* Увеличили */
             text-align: right;
-            margin-top: 25px;
+            margin-top: 20px;
+            font-family: monospace; /* Моноширинный шрифт для номера */
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
         }
 
         .delete-card-btn {
             grid-area: delete;
             justify-self: end;
-            background: none;
+            background: rgba(255, 255, 255, 0.2); /* Полупрозрачный фон */
             border: none;
             color: var(--text-light);
-            opacity: 0.7;
-            font-size: 20px;
+            border-radius: 50%;
+            font-size: 16px;
             cursor: pointer;
-            width: 20px;
-            height: 20px;
+            width: 30px; /* Увеличили размер */
+            height: 30px;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: opacity 0.2s;
+            transition: background 0.2s, opacity 0.2s;
             padding: 0;
+            line-height: 1;
         }
-        .delete-card-btn:hover { opacity: 1; }
+        .delete-card-btn:hover { background: rgba(255, 255, 255, 0.4); }
 
         /* Модальное окно */
         .modal {
@@ -180,80 +218,101 @@
             display: none;
             align-items: center;
             justify-content: center;
-            background: rgba(0,0,0,0.6);
-            backdrop-filter: blur(8px);
+            background: rgba(0,0,0,0.7); /* Более темный фон */
+            backdrop-filter: blur(10px); /* Увеличили размытие */
             z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .modal.show {
+            opacity: 1;
         }
 
         .modal-content {
             background: var(--bg-card-dark);
-            border-radius: 20px;
-            padding: 24px;
+            border-radius: 25px; /* Более закругленные */
+            padding: 30px; /* Увеличили отступы */
             width: 90%;
-            max-width: 400px;
+            max-width: 380px;
             text-align: center;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-            animation: fadeIn 0.25s ease;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            transform: scale(0.95);
+            transition: transform 0.3s ease;
+        }
+        .modal.show .modal-content {
+            transform: scale(1);
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: scale(0.9); }
-            to { opacity: 1; transform: scale(1); }
-        }
 
         .modal-content h3 {
             margin-top: 0;
-            font-size: 22px;
+            margin-bottom: 5px;
+            font-size: 24px;
             color: var(--text-light);
         }
         .modal-content p {
             color: var(--text-subtle);
+            font-size: 16px;
+            margin-bottom: 20px;
         }
 
         svg, #qrcode {
-            margin: 20px auto 0;
-            width: 100%;
-            max-width: 300px;
+            margin: 20px auto 30px; /* Увеличили нижний отступ */
+            width: 90%;
+            max-width: 250px;
             height: auto;
             display: block;
+            background: #fff; /* Белый фон для читаемости кода */
+            padding: 10px;
+            border-radius: 10px;
+        }
+        /* Стилизация QR-кода */
+        #qrcode img {
+            display: block;
+            width: 100%;
+            height: auto;
         }
         
         /* Кнопки модального окна */
         #deleteCard, #closeModal {
             margin-top: 15px;
             font-weight: 600;
+            width: 100%;
         }
         #deleteCard {
-            background: #e63946; /* Красный цвет для удаления */
+            background: #ff4d4f; /* Более яркий красный */
             color: #fff;
         }
         #closeModal {
-            background: #555; /* Серый цвет для закрытия */
-            color: #fff;
+            background: var(--bg-input); 
+            color: var(--text-subtle);
         }
     </style>
 </head>
 <body>
     <header>
         <span>Мои карты</span>
-        <button id="addBtn">＋</button>
+        <button id="addBtn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="feather feather-plus-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+        </button>
     </header>
 
     <div class="form" id="form">
         <input id="shop_name" placeholder="Название магазина" />
         <input id="card_number" placeholder="Номер карты" type="number" pattern="\d*" />
-        <label style="color: var(--text-subtle); margin-top: 5px;">Тип кода:</label>
+        <label style="color: var(--text-subtle); margin-top: 5px; font-size: 14px;">Цвет карты:</label>
+        <div class="colors" id="colorSelect">
+            <div class="color active" style="background:#ff4d4f" data-color="#ff4d4f"></div>
+            <div class="color" style="background:#fadb14" data-color="#fadb14"></div>
+            <div class="color" style="background:#52c41a" data-color="#52c41a"></div>
+            <div class="color" style="background:#1890ff" data-color="#1890ff"></div>
+            <div class="color" style="background:#595959" data-color="#595959"></div>
+        </div>
+        <label style="color: var(--text-subtle); margin-top: 5px; font-size: 14px;">Тип кода:</label>
         <select id="code_type">
             <option value="barcode">Штрихкод (Code 128)</option>
             <option value="qr">QR-код</option>
         </select>
-        <div class="colors" id="colorSelect">
-            <div class="color active" style="background:#e63946" data-color="#e63946"></div>
-            <div class="color" style="background:#f4a261" data-color="#f4a261"></div>
-            <div class="color" style="background:#2a9d8f" data-color="#2a9d8f"></div>
-            <div class="color" style="background:#457b9d" data-color="#457b9d"></div>
-            <div class="color" style="background:#555" data-color="#555"></div>
-        </div>
         <button id="saveCard">Сохранить карту</button>
     </div>
 
@@ -275,10 +334,29 @@
         // Инициализация Telegram Web App
         const tg = window.Telegram.WebApp;
         tg.expand();
-        // Включаем темную тему Telegram, если она доступна
+        // Установка переменных в зависимости от темы Telegram
         if (tg.colorScheme === 'dark') {
-            document.body.style.setProperty('--bg-dark', tg.themeParams.bg_color);
-            document.body.style.setProperty('--bg-card-dark', tg.themeParams.secondary_bg_color || '#2a2a2a');
+            document.documentElement.style.setProperty('--bg-dark', tg.themeParams.bg_color || '#171717');
+            document.documentElement.style.setProperty('--bg-card-dark', tg.themeParams.secondary_bg_color || '#2c2c2c');
+            document.documentElement.style.setProperty('--bg-input', tg.themeParams.secondary_bg_color || '#383838');
+        } else {
+            // Светлая тема - задаем светлые переменные
+            document.documentElement.style.setProperty('--bg-dark', '#f0f2f5');
+            document.documentElement.style.setProperty('--bg-card-dark', '#ffffff');
+            document.documentElement.style.setProperty('--bg-input', '#f5f5f5');
+            document.documentElement.style.setProperty('--text-light', '#1f1f1f');
+            document.documentElement.style.setProperty('--text-subtle', '#616161');
+            document.documentElement.style.setProperty('--border-color', '#e0e0e0');
+            document.documentElement.style.setProperty('--shadow-color-subtle', 'rgba(0, 0, 0, 0.08)');
+            document.documentElement.style.setProperty('--shadow-color-strong', 'rgba(0, 0, 0, 0.15)');
+
+            // При необходимости меняем цвета Barcode/QR для светлой темы
+            const style = document.createElement('style');
+            style.textContent = `
+                .modal-content { background: var(--bg-card-dark); }
+                svg, #qrcode { background: #fff; }
+            `;
+            document.head.appendChild(style);
         }
 
         const API_URL = "https://discount-cards.vercel.app/api/save";
@@ -297,7 +375,7 @@
         const qrcodeDiv = document.getElementById("qrcode");
         const deleteBtn = document.getElementById("deleteCard");
 
-        let selectedColor = "#e63946"; // Цвет по умолчанию для новой темной темы
+        let selectedColor = "#ff4d4f"; // Обновленный цвет по умолчанию
 
         // 1. Обработчик выбора цвета
         document.querySelectorAll(".color").forEach(c => {
@@ -325,18 +403,20 @@
             cards.forEach(c => {
                 const div = document.createElement("div");
                 div.className = "card";
-                div.style.background = c.color || "#e63946"; // Новый цвет по умолчанию
+                div.style.background = c.color || "#ff4d4f"; // Новый цвет по умолчанию
                 
                 div.innerHTML = `
                     <div class="shop">${c.shop_name}</div>
-                    <button class="delete-card-btn" data-card-number="${c.card_number}">✖</button>
+                    <button class="delete-card-btn" data-card-number="${c.card_number}">
+                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
                     <div class="number">№ ${c.card_number}</div>
                 `;
                 
                 // При клике на саму карту (кроме кнопки удаления) открываем модальное окно
                 div.onclick = (e) => {
                     // Проверяем, не был ли клик по кнопке удаления
-                    if (!e.target.classList.contains('delete-card-btn')) {
+                    if (!e.target.closest('.delete-card-btn')) {
                         openModal(c);
                     }
                 };
@@ -355,21 +435,32 @@
         async function deleteCard(cardNumber) {
             const user = tg.initDataUnsafe?.user || { id: "unknown" };
             
-            if (!confirm(`Вы уверены, что хотите удалить карту № ${cardNumber} ?`)) return;
+            // Замена confirm на Telegram.WebApp.showPopup
+            tg.showPopup({
+                title: 'Удаление карты',
+                message: `Вы уверены, что хотите удалить карту № ${cardNumber}?`,
+                buttons: [
+                    { id: 'delete', type: 'destructive', text: 'Удалить' },
+                    { id: 'cancel', type: 'cancel' }
+                ]
+            }, async (buttonId) => {
+                if (buttonId === 'delete') {
+                    const res = await fetch(API_URL, {
+                        method: "DELETE",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ user_id: user.id, card_number: cardNumber }),
+                    });
 
-            const res = await fetch(API_URL, {
-                method: "DELETE",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ user_id: user.id, card_number: cardNumber }),
+                    if (res.ok) {
+                        modal.classList.remove('show');
+                        modal.style.display = "none";
+                        loadCards();
+                        tg.showAlert("Карта успешно удалена!");
+                    } else {
+                        tg.showAlert("Ошибка при удалении карты!");
+                    }
+                }
             });
-
-            if (res.ok) {
-                modal.style.display = "none";
-                loadCards();
-                tg.showPopup({ message: "Карта успешно удалена!" });
-            } else {
-                alert("Ошибка при удалении карты!");
-            }
         }
         
         // 5. Обработчик кнопки "Сохранить"
@@ -398,23 +489,38 @@
                 document.getElementById("shop_name").value = "";
                 document.getElementById("card_number").value = "";
                 loadCards();
-                tg.showPopup({ message: "Карта успешно добавлена!" });
-            } else alert("Ошибка при добавлении!");
+                tg.showAlert("Карта успешно добавлена!");
+            } else tg.showAlert("Ошибка при добавлении!");
         };
 
         // 6. Открытие модального окна
         function openModal(card) {
             modal.style.display = "flex";
+            setTimeout(() => modal.classList.add('show'), 10); // Показываем с задержкой для анимации
+            
             modalShop.textContent = card.shop_name;
             modalNumber.textContent = "№ " + card.card_number;
             qrcodeDiv.innerHTML = "";
             barcode.innerHTML = "";
 
+            // Обновляем обработчик удаления в модальном окне, чтобы он брал номер из контекста
+            deleteBtn.onclick = () => deleteCard(card.card_number);
+
+            const isDark = tg.colorScheme === 'dark' || !tg.colorScheme;
+            const darkColor = isDark ? "#fff" : "#000";
+            const lightColor = isDark ? "#000" : "#fff";
+
             if (card.type === "qr") {
                 // Скрываем SVG, показываем QR
                 barcode.style.display = 'none';
                 qrcodeDiv.style.display = 'block';
-                new QRCode(qrcodeDiv, { text: card.card_number, width: 200, height: 200, colorDark: "#000", colorLight: "#fff" });
+                new QRCode(qrcodeDiv, { 
+                    text: card.card_number, 
+                    width: 250, 
+                    height: 250, 
+                    colorDark: darkColor, 
+                    colorLight: lightColor 
+                });
             } else {
                 // Скрываем QR, показываем Barcode
                 qrcodeDiv.style.display = 'none';
@@ -422,22 +528,26 @@
                 JsBarcode("#barcode", card.card_number, { 
                     format: "CODE128", 
                     displayValue: true, 
-                    lineColor: "#000",
-                    background: "#fff" // Фон для штрихкода
+                    lineColor: darkColor,
+                    background: lightColor, // Фон для штрихкода
+                    text: card.card_number,
+                    margin: 10
                 });
             }
         }
         
         // 7. Обработчики модального окна
-        closeModal.onclick = () => modal.style.display = "none";
-        window.onclick = e => { if (e.target === modal) modal.style.display = "none"; };
-        
-        // Привязываем функцию удаления к кнопке внутри модального окна
-        deleteBtn.onclick = () => {
-             const cardNumber = modalNumber.textContent.replace("№ ", "");
-             deleteCard(cardNumber);
+        closeModal.onclick = () => {
+            modal.classList.remove('show');
+            setTimeout(() => modal.style.display = "none", 300); // Закрываем после анимации
+        }
+        window.onclick = e => { 
+            if (e.target === modal) {
+                modal.classList.remove('show');
+                setTimeout(() => modal.style.display = "none", 300); 
+            }
         };
-
+        
         // Запуск при загрузке
         loadCards();
     </script>
