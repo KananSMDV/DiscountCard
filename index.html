@@ -1,284 +1,526 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Discount Cards</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Discount Cards — Telegram style</title>
+
+  <!-- libs -->
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
   <style>
-    body {
-      font-family: system-ui, -apple-system, sans-serif;
-      background: var(--tg-theme-bg-color, #f4f4f6);
-      color: var(--tg-theme-text-color, #222);
-      margin: 0;
-      padding: 0;
+    :root{
+      --tg-blue: #2A8DF6;
+      --tg-bg: #f4f8fb;
+      --text: #111827;
+      --card-radius: 18px;
+      --shadow-1: 0 6px 18px rgba(17,24,39,0.12);
+      --shadow-2: 0 10px 30px rgba(17,24,39,0.18);
+      /* rainbow palette for color choices */
+      --r1: #ff5252; /* red */
+      --r2: #ff9800; /* orange */
+      --r3: #ffd600; /* yellow */
+      --r4: #00c853; /* green */
+      --r5: #00b0ff; /* light blue */
+      --r6: #3d5afe; /* indigo */
+      --r7: #9c27b0; /* purple */
     }
 
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 16px 20px;
-      font-size: 22px;
-      background: var(--tg-theme-bg-color, #fff);
-      border-bottom: 1px solid #ddd;
-      font-weight: 600;
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;
+      background: linear-gradient(180deg,var(--tg-bg),#ffffff 60%);
+      color:var(--text);
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
     }
 
-    #addBtn {
-      font-size: 28px;
-      border: none;
-      background: none;
-      cursor: pointer;
-      color: var(--tg-theme-button-color, #2a9d8f);
+    /* header */
+    header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:14px 16px;
+      background:rgba(255,255,255,0.6);
+      backdrop-filter: blur(6px);
+      border-bottom:1px solid rgba(0,0,0,0.04);
+      position:sticky;
+      top:0;
+      z-index:20;
     }
-
-    .form {
-      display: none;
-      flex-direction: column;
-      gap: 10px;
-      padding: 20px;
-      background: #fff;
-      border-bottom: 1px solid #eee;
+    header .title{font-weight:700; font-size:18px; color:var(--text)}
+    #addBtn{
+      background: linear-gradient(90deg,var(--tg-blue), #2a9d8f);
+      color:#fff;
+      border:none;
+      width:40px;height:40px;border-radius:10px;
+      font-size:22px;cursor:pointer;
+      box-shadow:var(--shadow-1);
+      transition: transform .18s ease, box-shadow .18s ease;
     }
+    #addBtn:active{ transform: translateY(1px) scale(.99); box-shadow:none; }
 
+    /* form */
+    .form{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      padding:14px;
+      margin:10px 12px;
+      background:#fff;
+      border-radius:12px;
+      box-shadow:var(--shadow-1);
+      max-height:0;
+      overflow:hidden;
+      transition: max-height .32s cubic-bezier(.2,.9,.2,1);
+    }
+    .form.open{ max-height:420px; }
+
+    .row{ display:flex; gap:10px; }
     input, select, button {
-      padding: 12px;
-      font-size: 16px;
-      border-radius: 12px;
-      border: 1px solid #ccc;
+      font-size:15px;
+      padding:10px 12px;
+      border-radius:10px;
+      border:1px solid rgba(16,24,40,0.06);
+      background:#fff;
+      outline:none;
+      box-sizing:border-box;
     }
-
-    .colors {
-      display: flex;
-      gap: 10px;
-      margin-top: 5px;
-    }
-
+    input{ flex:1; }
+    .colors{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
     .color {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      cursor: pointer;
-      border: 2px solid transparent;
-      transition: transform 0.2s ease;
+      width:34px;height:34px;border-radius:9px;cursor:pointer;border:2px solid transparent;
+      box-shadow: 0 3px 8px rgba(2,6,23,0.06); transition: transform .18s ease, box-shadow .18s;
     }
-    .color:hover { transform: scale(1.1); }
-    .color.active { border: 2px solid #000; }
-
-    #cards {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      padding: 16px;
+    .color.active{ transform:translateY(-3px); box-shadow:var(--shadow-2); border-color: rgba(0,0,0,0.06); }
+    .saveBtn{
+      background:var(--tg-blue); color:#fff; border:none; padding:10px 14px; border-radius:10px; cursor:pointer;
+      font-weight:600;
+      box-shadow: 0 8px 18px rgba(42,141,246,0.18);
+      transition: transform .16s ease;
     }
+    .saveBtn:active{ transform:translateY(1px); }
 
-    .card {
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      border-radius: 20px;
-      padding: 20px;
-      color: #fff;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    /* cards list */
+    #cards{
+      padding:16px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      max-width:720px;
+      margin:0 auto 80px;
     }
 
-    .card:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+    .card{
+      display:flex;
+      flex-direction:column;
+      padding:18px;
+      border-radius:var(--card-radius);
+      color:#fff;
+      min-height:84px;
+      justify-content:space-between;
+      position:relative;
+      overflow:hidden;
+      cursor:pointer;
+      transition: transform .22s cubic-bezier(.2,.9,.2,1), box-shadow .22s;
+      box-shadow: var(--shadow-1);
     }
-
-    .card .shop {
-      font-size: 20px;
-      letter-spacing: 0.5px;
+    .card::after{
+      content:""; position:absolute; inset:0; opacity:0.06; pointer-events:none;
+      background: linear-gradient(120deg, rgba(255,255,255,0.06), rgba(0,0,0,0.02));
     }
+    .card:hover{ transform: translateY(-6px); box-shadow: var(--shadow-2); }
 
-    .card .number {
-      opacity: 0.8;
-      font-size: 14px;
-      text-align: right;
-      margin-top: 30px;
+    .shop{ font-size:18px; font-weight:700; letter-spacing:0.2px; text-shadow: 0 1px 0 rgba(0,0,0,0.06); }
+    .number{ font-size:13px; opacity:0.95; align-self:flex-end; margin-top:8px; font-weight:600; }
+
+    /* modal */
+    .modal{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:1000; background:rgba(2,6,23,0.35); }
+    .modal.show{ display:flex; }
+    .modal-card{
+      width:92%; max-width:420px; background:#fff; border-radius:18px; padding:18px; text-align:center;
+      box-shadow:0 18px 50px rgba(2,6,23,0.5);
+      transform-origin:center; animation: pop .22s cubic-bezier(.2,.9,.2,1);
     }
+    @keyframes pop { from{ transform:scale(.96); opacity:0 } to{ transform:scale(1); opacity:1 } }
 
-    .modal {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      background: rgba(0,0,0,0.4);
-      backdrop-filter: blur(4px);
-      z-index: 1000;
-    }
+    .modal-shop{ font-size:20px; font-weight:700; color:var(--text) }
+    .modal-number{ margin-top:8px; color:rgba(17,24,39,0.7); font-weight:600 }
 
-    .modal-content {
-      background: #fff;
-      border-radius: 20px;
-      padding: 24px;
-      width: 90%;
-      max-width: 400px;
-      text-align: center;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-      animation: fadeIn 0.25s ease;
-    }
+    /* qrcode/barcode container */
+    #qwrap{ display:flex; align-items:center; justify-content:center; margin-top:14px; }
+    #qrcode, svg#barcode { display:block; margin:0 auto; }
+    .modal-actions{ display:flex; gap:10px; margin-top:16px; justify-content:center; }
+    .btn{ padding:10px 14px; border-radius:10px; border:none; cursor:pointer; font-weight:600; }
+    .btn-close{ background:#e6eefc; color:var(--tg-blue); }
+    .btn-delete{ background:#ffe9ed; color:#d32f2f; }
 
-    @keyframes fadeIn {
-      from { opacity: 0; transform: scale(0.9); }
-      to { opacity: 1; transform: scale(1); }
-    }
+    /* small helpers */
+    .muted{ color:rgba(17,24,39,0.5); font-size:13px; }
 
-    .modal-content h3 {
-      margin-top: 0;
-      font-size: 22px;
-    }
-
-    svg, #qrcode {
-      margin-top: 10px;
-      width: 100%;
-    }
-
-    #closeModal {
-      margin-top: 18px;
-      background: #2a9d8f;
-      color: #fff;
-      border: none;
-      padding: 12px 20px;
-      font-size: 16px;
-      border-radius: 12px;
-      cursor: pointer;
+    /* small responsive tweak */
+    @media (min-width:720px){
+      #cards{ padding:24px; }
     }
   </style>
 </head>
 <body>
   <header>
-    <span>Мои карты</span>
-    <button id="addBtn">＋</button>
+    <div class="title">Мои карты</div>
+    <button id="addBtn" aria-label="Добавить карту">＋</button>
   </header>
 
-  <div class="form" id="form">
-    <input id="shop_name" placeholder="Название магазина" />
-    <input id="card_number" placeholder="Номер карты" />
-    <label>Тип кода:</label>
-    <select id="code_type">
-      <option value="barcode">Штрихкод</option>
-      <option value="qr">QR-код</option>
-    </select>
-    <div class="colors" id="colorSelect">
-      <div class="color active" style="background:#2a9d8f" data-color="#2a9d8f"></div>
-      <div class="color" style="background:#264653" data-color="#264653"></div>
-      <div class="color" style="background:#e76f51" data-color="#e76f51"></div>
-      <div class="color" style="background:#f4a261" data-color="#f4a261"></div>
-      <div class="color" style="background:#457b9d" data-color="#457b9d"></div>
+  <main>
+    <div id="form" class="form" role="form" aria-hidden="true">
+      <div class="row">
+        <input id="shop_name" placeholder="Название магазина" autocomplete="off" />
+        <input id="card_number" placeholder="Номер карты" autocomplete="off" />
+      </div>
+
+      <div class="row">
+        <label class="muted" style="align-self:center;">Тип кода:</label>
+        <select id="code_type">
+          <option value="barcode">Штрихкод</option>
+          <option value="qr">QR-код</option>
+        </select>
+        <div style="flex:1"></div>
+      </div>
+
+      <div>
+        <div class="muted">Цвет карточки:</div>
+        <div class="colors" id="colorSelect" style="margin-top:8px;">
+          <div class="color active" data-color="var(--r1)" style="background:var(--r1)"></div>
+          <div class="color" data-color="var(--r2)" style="background:var(--r2)"></div>
+          <div class="color" data-color="var(--r3)" style="background:var(--r3)"></div>
+          <div class="color" data-color="var(--r4)" style="background:var(--r4)"></div>
+          <div class="color" data-color="var(--r5)" style="background:var(--r5)"></div>
+          <div class="color" data-color="var(--r6)" style="background:var(--r6)"></div>
+          <div class="color" data-color="var(--r7)" style="background:var(--r7)"></div>
+        </div>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; margin-top:10px;">
+        <button id="saveCard" class="saveBtn btn">Сохранить карту</button>
+      </div>
     </div>
-    <button id="saveCard">Сохранить карту</button>
-  </div>
 
-  <div id="cards"></div>
+    <div id="cards"></div>
+  </main>
 
-  <!-- Modal -->
-  <div class="modal" id="modal">
-    <div class="modal-content">
-      <h3 id="modal-shop"></h3>
-      <p id="modal-number"></p>
-      <div id="qrcode"></div>
-      <svg id="barcode"></svg>
-      <button id="closeModal">Закрыть</button>
+  <!-- modal -->
+  <div id="modal" class="modal" role="dialog" aria-hidden="true">
+    <div class="modal-card" role="document">
+      <div class="modal-shop" id="modal-shop"></div>
+      <div id="qwrap">
+        <div id="qrcode"></div>
+        <svg id="barcode" style="max-height:180px;"></svg>
+      </div>
+      <div id="modal-number" class="modal-number"></div>
+
+      <div class="modal-actions">
+        <button id="closeModal" class="btn btn-close">Закрыть</button>
+        <button id="deleteCard" class="btn btn-delete">Удалить</button>
+      </div>
     </div>
   </div>
 
   <script>
-    const tg = window.Telegram.WebApp;
-    tg.expand();
-
+  (function(){
+    // --- CONFIG ---
     const API_URL = "https://discount-cards.vercel.app/api/save";
     const cardsDiv = document.getElementById("cards");
     const form = document.getElementById("form");
     const addBtn = document.getElementById("addBtn");
     const saveCard = document.getElementById("saveCard");
+    const colorEls = document.querySelectorAll(".color");
 
-    let selectedColor = "#2a9d8f";
-    document.querySelectorAll(".color").forEach(c => {
-      c.onclick = () => {
-        document.querySelectorAll(".color").forEach(el => el.classList.remove("active"));
-        c.classList.add("active");
-        selectedColor = c.dataset.color;
-      };
+    // modal
+    const modal = document.getElementById("modal");
+    const closeModal = document.getElementById("closeModal");
+    const deleteCardBtn = document.getElementById("deleteCard");
+    const modalShop = document.getElementById("modal-shop");
+    const modalNumber = document.getElementById("modal-number");
+    const barcodeSvg = document.getElementById("barcode");
+    const qrcodeDiv = document.getElementById("qrcode");
+
+    // offline storage keys
+    const STORAGE_CARDS = "cardsCache_v1";
+    const STORAGE_PENDING = "pendingOps_v1";
+
+    // init
+    const tg = window.Telegram?.WebApp || {};
+    try{ tg.expand?.(); }catch(e){ /* ignore */ }
+
+    // selected color default
+    let selectedColor = getComputedStyle(document.documentElement).getPropertyValue('--r1').trim() || "#ff5252";
+
+    // color selection
+    colorEls.forEach(el=>{
+      el.addEventListener("click", ()=>{
+        colorEls.forEach(x=>x.classList.remove("active"));
+        el.classList.add("active");
+        // element stores CSS variable name or hex; support both
+        const c = el.dataset.color;
+        selectedColor = resolveColorVar(c);
+      });
     });
 
-    addBtn.onclick = () => {
-      form.style.display = form.style.display === "flex" ? "none" : "flex";
-    };
+    function resolveColorVar(s){
+      if(!s) return "#ff5252";
+      if(s.startsWith("var(") || s.startsWith("var")) {
+        // extract var name
+        const name = s.replace(/var\(|\)/g,"").trim();
+        return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || "#ff5252";
+      }
+      if(s.startsWith("var")) {
+        const name = s.replace("var(","").replace(")","");
+        return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || "#ff5252";
+      }
+      return s;
+    }
 
-    async function loadCards() {
+    // open/close form with animation
+    addBtn.addEventListener("click", ()=>{
+      form.classList.toggle("open");
+    });
+
+    // helper: show toast (simple)
+    function toast(text){
+      // tiny ephemeral toast
+      const el = document.createElement("div");
+      el.textContent = text;
+      Object.assign(el.style, {
+        position: "fixed", left:"50%", transform:"translateX(-50%)", bottom:"22px",
+        background:"rgba(17,24,39,0.9)", color:"#fff", padding:"8px 14px", borderRadius:"10px", zIndex:9999
+      });
+      document.body.appendChild(el);
+      setTimeout(()=> el.style.opacity = "0.0", 2200);
+      setTimeout(()=> el.remove(), 2600);
+    }
+
+    // fetch wrapper with timeout
+    async function fetchWithTimeout(url, opts = {}, t = 8000){
+      const controller = new AbortController();
+      const id = setTimeout(()=>controller.abort(), t);
+      try {
+        return await fetch(url, {...opts, signal: controller.signal});
+      } finally { clearTimeout(id); }
+    }
+
+    // load cards: primary try network with user filter, fallback to local cache
+    async function loadCards(){
       const user = tg.initDataUnsafe?.user || { id: "unknown" };
-      const res = await fetch(`${API_URL}?user_id=${user.id}`);
-      const cards = await res.json();
+      const userId = encodeURIComponent(user.id);
+      try {
+        const res = await fetchWithTimeout(`${API_URL}?user_id=${userId}`, { method: "GET" }, 9000);
+        if(!res.ok) throw new Error("network");
+        const cards = await res.json();
+        // cache
+        localStorage.setItem(STORAGE_CARDS, JSON.stringify(cards || []));
+        renderCards(cards || []);
+        // attempt to flush pending ops (if any)
+        processPendingOps();
+      } catch (err) {
+        // offline or error -> use cache
+        const cached = JSON.parse(localStorage.getItem(STORAGE_CARDS) || "[]");
+        renderCards(cached);
+        console.warn("Load failed, used cache:", err);
+      }
+    }
+
+    function renderCards(cards){
       cardsDiv.innerHTML = "";
-      cards.forEach(c => {
+      if(!cards.length){
+        const no = document.createElement("div");
+        no.textContent = "У вас пока нет карт. Нажмите + чтобы добавить.";
+        Object.assign(no.style, {padding:"18px", color:"rgba(0,0,0,0.5)", textAlign:"center"});
+        cardsDiv.appendChild(no);
+        return;
+      }
+      cards.forEach(c=>{
         const div = document.createElement("div");
         div.className = "card";
-        div.style.background = c.color || "#2a9d8f";
-        div.innerHTML = `
-          <div class="shop">${c.shop_name}</div>
-          <div class="number">№ ${c.card_number}</div>
-        `;
-        div.onclick = () => openModal(c);
+        // prefer raw hex sent by server; if server returned CSS var, resolve
+        const bg = c.color || selectedColor;
+        div.style.background = bg.startsWith("var") ? resolveColorVar(bg) : bg;
+        div.innerHTML = `<div class="shop">${escapeHtml(c.shop_name)}</div><div class="number">№ ${escapeHtml(c.card_number)}</div>`;
+        div.addEventListener("click", ()=> openModal(c));
         cardsDiv.appendChild(div);
       });
     }
 
-    saveCard.onclick = async () => {
+    // save card
+    saveCard.addEventListener("click", async ()=>{
       const shop_name = document.getElementById("shop_name").value.trim();
       const card_number = document.getElementById("card_number").value.trim();
       const type = document.getElementById("code_type").value;
-      if (!shop_name || !card_number) return alert("Заполните все поля!");
+      if(!shop_name || !card_number) return toast("Заполните все поля");
 
       const user = tg.initDataUnsafe?.user || { id: "unknown", username: "anonymous" };
-      const res = await fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user, shop_name, card_number, color: selectedColor, type }),
-      });
-      if (res.ok) {
-        form.style.display = "none";
+      const payload = { user, shop_name, card_number, color: selectedColor, type };
+
+      try {
+        const res = await fetchWithTimeout(API_URL, {
+          method: "POST",
+          headers: {"Content-Type":"application/json"},
+          body: JSON.stringify(payload),
+        }, 9000);
+
+        if(!res.ok) throw new Error("server error");
+        // reload list from network
         document.getElementById("shop_name").value = "";
         document.getElementById("card_number").value = "";
-        loadCards();
-      } else alert("Ошибка при добавлении!");
-    };
-
-    const modal = document.getElementById("modal");
-    const closeModal = document.getElementById("closeModal");
-    const modalShop = document.getElementById("modal-shop");
-    const modalNumber = document.getElementById("modal-number");
-    const barcode = document.getElementById("barcode");
-    const qrcodeDiv = document.getElementById("qrcode");
-
-    function openModal(card) {
-      modal.style.display = "flex";
-      modalShop.textContent = card.shop_name;
-      modalNumber.textContent = "№ " + card.card_number;
-      qrcodeDiv.innerHTML = "";
-      barcode.innerHTML = "";
-
-      if (card.type === "qr") {
-        new QRCode(qrcodeDiv, { text: card.card_number, width: 200, height: 200 });
-      } else {
-        JsBarcode("#barcode", card.card_number, { format: "CODE128", displayValue: true });
+        form.classList.remove("open");
+        toast("Карта добавлена");
+        await loadCards();
+      } catch (err) {
+        // offline -> queue operation
+        queuePendingOp({ op: "add", payload });
+        // optimistic UI: add to local cache
+        const cached = JSON.parse(localStorage.getItem(STORAGE_CARDS) || "[]");
+        cached.push({ shop_name, card_number, color: selectedColor, type });
+        localStorage.setItem(STORAGE_CARDS, JSON.stringify(cached));
+        renderCards(cached);
+        document.getElementById("shop_name").value = "";
+        document.getElementById("card_number").value = "";
+        form.classList.remove("open");
+        toast("В офлайн — карта сохранена локально и будет отправлена при подключении");
       }
+    });
+
+    // open modal: show qr or barcode & number; store current card for delete
+    let currentCard = null;
+    function openModal(card){
+      currentCard = card;
+      modalShop.textContent = card.shop_name || "—";
+      modalNumber.textContent = "№ " + (card.card_number || "—");
+
+      // clear previous
+      qrcodeDiv.innerHTML = "";
+      barcodeSvg.innerHTML = "";
+
+      if(card.type === "qr"){
+        // center a canvas 200x200
+        new QRCode(qrcodeDiv, { text: String(card.card_number || ""), width: 220, height: 220, correctLevel: QRCode.CorrectLevel.H });
+        barcodeSvg.style.display = "none";
+        qrcodeDiv.style.display = "block";
+      } else {
+        // barcode
+        qrcodeDiv.style.display = "none";
+        barcodeSvg.style.display = "block";
+        try {
+          JsBarcode("#barcode", String(card.card_number || ""), { format: "CODE128", displayValue: true, fontSize:14, textMargin:6, margin:6 });
+        } catch(e){
+          console.error("JsBarcode error:", e);
+        }
+      }
+
+      modal.classList.add("show");
+      modal.setAttribute("aria-hidden","false");
     }
 
-    closeModal.onclick = () => modal.style.display = "none";
-    window.onclick = e => { if (e.target === modal) modal.style.display = "none"; };
+    closeModal.addEventListener("click", ()=> {
+      modal.classList.remove("show");
+      modal.setAttribute("aria-hidden","true");
+      // cleanup qrcode to avoid duplicates
+      qrcodeDiv.innerHTML = "";
+      barcodeSvg.innerHTML = "";
+    });
 
+    // delete: try network, if offline queue
+    deleteCardBtn.addEventListener("click", async ()=>{
+      if(!currentCard) return;
+      const user = tg.initDataUnsafe?.user || { id: "unknown" };
+      const payload = { user_id: user.id, card_number: currentCard.card_number };
+      try {
+        const res = await fetchWithTimeout(API_URL, {
+          method: "DELETE",
+          headers: {"Content-Type":"application/json"},
+          body: JSON.stringify(payload),
+        }, 9000);
+        if(!res.ok) throw new Error("delete failed");
+        toast("Карта удалена");
+        modal.classList.remove("show");
+        await loadCards();
+      } catch (err) {
+        // offline -> queue delete
+        queuePendingOp({ op:"delete", payload });
+        // optimistic local delete from cache
+        const cached = JSON.parse(localStorage.getItem(STORAGE_CARDS) || "[]");
+        const updated = cached.filter(r => String(r.card_number) !== String(currentCard.card_number));
+        localStorage.setItem(STORAGE_CARDS, JSON.stringify(updated));
+        renderCards(updated);
+        modal.classList.remove("show");
+        toast("Удаление поставлено в очередь (офлайн)");
+      }
+    });
+
+    // pending ops queue helpers
+    function queuePendingOp(op){
+      const q = JSON.parse(localStorage.getItem(STORAGE_PENDING) || "[]");
+      q.push({...op, ts:Date.now()});
+      localStorage.setItem(STORAGE_PENDING, JSON.stringify(q));
+      // try to process now if online
+      processPendingOps();
+    }
+
+    async function processPendingOps(){
+      const q = JSON.parse(localStorage.getItem(STORAGE_PENDING) || "[]");
+      if(!q.length) return;
+      if(!navigator.onLine) return;
+      const toKeep = [];
+      for(const item of q){
+        try {
+          if(item.op === "add"){
+            await fetchWithTimeout(API_URL, {
+              method:"POST",
+              headers:{"Content-Type":"application/json"},
+              body: JSON.stringify(item.payload)
+            }, 9000);
+          } else if(item.op === "delete"){
+            await fetchWithTimeout(API_URL, {
+              method:"DELETE",
+              headers:{"Content-Type":"application/json"},
+              body: JSON.stringify(item.payload)
+            }, 9000);
+          }
+          // success -> don't keep
+        } catch(e){
+          console.warn("Pending op failed, keep for later:", e, item);
+          toKeep.push(item);
+        }
+      }
+      localStorage.setItem(STORAGE_PENDING, JSON.stringify(toKeep));
+      // refresh list from network if any ops succeeded
+      try{ await loadCards(); }catch(e){/*ignore*/ }
+    }
+
+    // try to process when back online
+    window.addEventListener("online", ()=> {
+      toast("Сеть восстановлена — синхронизирую");
+      processPendingOps();
+      loadCards();
+    });
+
+    // util escape
+    function escapeHtml(s){ return String(s || "").replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' })[c]); }
+
+    // attempt to register service worker (for offline caching)
+    if('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').then(()=> {
+        console.log("SW registered");
+      }).catch(e=> console.warn("SW reg failed", e));
+    }
+
+    // initial load
     loadCards();
+
+    // expose loadCards for debugging (optional)
+    window._loadCards = loadCards;
+  })();
   </script>
 </body>
 </html>
