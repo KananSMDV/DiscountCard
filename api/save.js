@@ -2,55 +2,57 @@ import { GoogleSpreadsheet } from "google-spreadsheet";
 import { JWT } from "google-auth-library";
 
 export default async function handler(req, res) {
-  try {
-    const { user_id, username, shop_name, card_number, color } =
-      req.method === "POST" ? req.body : req.query;
+  const creds = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_KEY);
+  const sheetId = process.env.SHEET_ID;
 
-    // Авторизация
-    const serviceAccount = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_KEY);
+  const serviceAuth = new JWT({
+    email: creds.client_email,
+    key: creds.private_key,
+    scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+  });
 
-    const auth = new JWT({
-      email: serviceAccount.client_email,
-      key: serviceAccount.private_key,
-      scopes: ["https://www.googleapis.com/auth/spreadsheets"],
-    });
+  const doc = new GoogleSpreadsheet(sheetId, serviceAuth);
+  await doc.loadInfo();
+  const sheet = doc.sheetsByTitle["Cards"] || doc.sheetsByIndex[0];
 
-    const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEET_ID, auth);
+  // Добавить новую карту
+  if (req.method === "POST") {
+    try {
+      const { user, shop_name, card_number, color, logo_url } = req.body;
 
-    await doc.loadInfo();
-
-    const sheet = doc.sheetsByTitle["Cards"] || doc.sheetsByIndex[0]; // Лист "Cards"
-
-    // Если есть данные — сохраняем новую карту
-    if (shop_name && card_number && color) {
       await sheet.addRow({
-        timestamp: new Date().toISOString(),
-        user_id: String(user_id),
-        username: username || "",
+        timestamp: new Date().toLocaleString("ru-RU", { timeZone: "Europe/Moscow" }),
+        user_id: user.id,
+        username: user.username || "",
         shop_name,
         card_number,
         color,
+        logo_url,
       });
+
+      return res.status(200).json({ success: true });
+    } catch (err) {
+      console.error("❌ Ошибка при записи:", err);
+      return res.status(500).json({ error: err.message });
     }
+  }
 
-    // Загружаем все строки
-    const rows = await sheet.getRows();
-
-    // ✅ Фикс фильтрации по user_id
-    const cards = rows
-      .filter((r) => String(r.user_id) === String(user_id))
-      .map((r) => ({
+  // Получить список всех карт
+  if (req.method === "GET") {
+    try {
+      const rows = await sheet.getRows();
+      const cards = rows.map(r => ({
         shop_name: r.shop_name,
         card_number: r.card_number,
         color: r.color,
+        logo_url: r.logo_url,
       }));
-
-    return res.status(200).json({ success: true, cards });
-  } catch (err) {
-    console.error("ERROR:", err);
-    return res.status(500).json({
-      success: false,
-      error: err.message,
-    });
+      return res.status(200).json(cards);
+    } catch (err) {
+      console.error("❌ Ошибка при чтении:", err);
+      return res.status(500).json({ error: err.message });
+    }
   }
+
+  return res.status(405).json({ error: "Method not allowed" });
 }
