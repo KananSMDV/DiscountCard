@@ -1,636 +1,255 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>DiscountCard</title>
-  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-
-  <style>
+<style>
+    /* 1. Обновленные Цвета и Переменные */
     :root {
-      --bg: #0d1117;          /* фон страницы */
-      --card-bg: #161b22;     /* фон карточек и панели */
-      --text: #e6edf3;        /* текст */
-      --accent: #2f81f7;      /* синий (GitHub стиль) */
-      --border: #30363d;      /* рамки */
+        --tg-bg: #121212; /* Более мягкий фон */
+        --tg-card: #1e1e1e; /* Фон для карточек и форм */
+        --tg-text: #e0e0e0; /* Светлый текст */
+        --tg-text-secondary: #a0a0a0; /* Вторичный текст */
+        --tg-accent: #3498db; /* Чистый синий акцент */
+        --shadow-light: rgba(255, 255, 255, 0.05);
+        --shadow-dark: rgba(0, 0, 0, 0.5);
     }
 
     body {
-      font-family: system-ui, -apple-system, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      margin: 0;
-      padding: 0;
-      overflow-x: hidden;
+        font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+        background: var(--tg-bg);
+        color: var(--tg-text);
+        margin: 0;
+        padding: 0;
+        transition: background 0.3s;
+        min-height: 100vh; /* Чтобы фон был на весь экран */
     }
 
+    /* 2. Шапка (Header) */
     header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 18px 22px;
-      font-size: 22px;
-      background: var(--card-bg);
-      border-bottom: 1px solid var(--border);
-      font-weight: 600;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 20px;
+        font-size: 24px; /* Чуть больше */
+        background: var(--tg-bg);
+        border-bottom: 1px solid #2a2a2a; /* Более мягкий разделитель */
+        font-weight: 700;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3); /* Легкая тень для "поднятия" */
+        position: sticky;
+        top: 0;
+        z-index: 50;
     }
 
     #addBtn {
-      font-size: 28px;
-      border: none;
-      background: none;
-      cursor: pointer;
-      color: var(--accent);
-      transition: transform 0.2s;
+        font-size: 32px; /* Больше и заметнее */
+        border: none;
+        background: none;
+        cursor: pointer;
+        color: var(--tg-accent);
+        transition: transform 0.2s, color 0.2s;
+        line-height: 1; /* Убрать лишний отступ */
+        padding: 0;
     }
-    #addBtn:hover { transform: scale(1.15); }
-
-    /* Overlay при активной форме */
-    #overlay {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: rgba(0,0,0,0.5);
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.3s ease;
-      z-index: 90;
-    }
-    #overlay.active {
-      opacity: 1;
-      pointer-events: auto;
+    #addBtn:hover {
+        transform: scale(1.15) rotate(90deg);
+        color: #5dade2; /* Легкий эффект при наведении */
     }
 
-    /* Панель добавления */
+    /* 3. Панель добавления (Form) */
     .form {
-      position: fixed;
-      bottom: -100%;
-      left: 0;
-      width: 100%;
-      background: var(--card-bg);
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      padding: 24px;
-      border-top: 1px solid var(--border);
-      border-radius: 16px 16px 0 0;
-      box-shadow: 0 -8px 20px rgba(0,0,0,0.4);
-      transition: bottom 0.4s ease;
-      z-index: 100;
+        position: fixed;
+        bottom: -100%;
+        left: 0;
+        width: 100%;
+        background: var(--tg-card);
+        border-top: none; /* Убираем жесткую границу */
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        padding: 25px 20px 40px; /* Больше отступ снизу */
+        border-radius: 25px 25px 0 0;
+        box-shadow: 0 -8px 30px var(--shadow-dark); /* Мягкая тень снизу */
+        transition: bottom 0.4s cubic-bezier(0.4, 0, 0.2, 1); /* Плавная анимация */
+        z-index: 100;
+        box-sizing: border-box; /* Важно для padding/width */
     }
 
     .form.active {
-      bottom: 0;
+        bottom: 0;
     }
 
-    .row { display:flex; gap:10px; }
     input, select {
-      padding: 12px;
-      font-size: 16px;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      background: #0d1117;
-      color: var(--text);
-      flex:1;
+        padding: 15px; /* Больше отступ */
+        font-size: 17px;
+        border-radius: 12px;
+        border: 1px solid #333; /* Легкая граница */
+        background: #252525;
+        color: var(--tg-text);
+        transition: border-color 0.3s;
+    }
+    input:focus, select:focus {
+        border-color: var(--tg-accent);
+        background: #282828;
+    }
+    ::placeholder {
+        color: var(--tg-text-secondary);
+        opacity: 0.7;
     }
 
-    label {
-      font-size: 14px;
-      opacity: 0.8;
+    button#saveCard {
+        padding: 15px;
+        font-size: 18px;
+        border-radius: 12px;
+        background: var(--tg-accent);
+        color: #fff;
+        font-weight: 700;
+        box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3); /* Тень в цвет кнопки */
+        transition: background 0.2s, transform 0.1s;
     }
-
-    .saveBtn {
-      background: var(--accent);
-      color: #fff;
-      border: none;
-      padding: 12px;
-      font-size: 16px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: 600;
-      transition: opacity 0.2s;
+    button#saveCard:active {
+        transform: scale(0.98);
+        box-shadow: none;
     }
-
-    .saveBtn:hover { opacity: 0.95; }
 
     .colors {
-      display: flex;
-      gap: 10px;
-      margin-top: 5px;
+        display: flex;
+        gap: 12px;
+        margin-top: 10px;
+        flex-wrap: wrap; /* Для мобильных */
     }
 
     .color {
-      width: 36px;
-      height: 36px;
-      border-radius: 10px;
-      cursor: pointer;
-      border: 2px solid transparent;
-      transition: transform 0.12s, box-shadow 0.12s;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        cursor: pointer;
+        border: 3px solid transparent; /* Толще рамка */
+        box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+        transition: transform 0.2s, border-color 0.2s;
     }
-    .color:hover { transform: translateY(-3px); box-shadow: 0 6px 16px rgba(0,0,0,0.3); }
-    .color.active { border: 2px solid rgba(255,255,255,0.14); box-shadow: 0 8px 20px rgba(0,0,0,0.45); }
+    .color:hover { transform: scale(1.1); }
+    .color.active {
+        border-color: #fff; /* Яркая белая рамка для активного цвета */
+        transform: scale(1.1);
+        box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+    }
 
+    /* 4. Список карт */
     #cards {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      padding: 16px;
-      max-width: 920px;
-      margin: 0 auto 80px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        padding: 20px;
     }
 
     .card {
-      position: relative;
-      background: var(--card-bg);
-      border-radius: 14px;
-      padding: 18px;
-      color: #fff;
-      border: 1px solid var(--border);
-      box-shadow: 0 2px 4px rgba(0,0,0,0.25);
-      cursor: pointer;
-      transition: transform 0.16s ease, box-shadow 0.16s;
+        position: relative;
+        background: var(--tg-card);
+        border-radius: 20px; /* Чуть более скругленные */
+        padding: 20px;
+        color: #fff;
+        /* Красивая мягкая тень */
+        box-shadow: 0 6px 20px rgba(0,0,0,0.6), inset 0 0 0 1px #2a2a2a;
+        cursor: pointer;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        /* Стили для текста внутри, чтобы хорошо смотрелось на цветном фоне */
+        text-shadow: 0 1px 2px rgba(0,0,0,0.2);
     }
 
-    .card:hover { transform: translateY(-4px); box-shadow: 0 8px 18px rgba(0,0,0,0.35); }
+    .card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.7); }
 
-    .card .shop { font-size: 18px; font-weight: 700; }
-    .card .number { opacity: 0.9; font-size: 14px; text-align: right; margin-top: 10px; }
+    .card .shop { font-size: 20px; font-weight: 700; margin-bottom: 5px; }
+    .card .number {
+        opacity: 0.9;
+        font-size: 16px;
+        text-align: right;
+        margin-top: 10px;
+        font-family: monospace; /* Для номера карты */
+    }
 
     .delete-btn {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      background: transparent;
-      border: none;
-      color: #ff6b6b;
-      font-size: 20px;
-      cursor: pointer;
-      transition: transform 0.12s;
+        position: absolute;
+        top: 10px;
+        right: 12px;
+        background: rgba(255, 0, 0, 0.1); /* Легкий фон */
+        border: none;
+        color: #ff6b6b;
+        font-size: 24px;
+        width: 30px;
+        height: 30px;
+        line-height: 1;
+        border-radius: 50%;
+        cursor: pointer;
+        transition: transform 0.2s, background 0.2s;
     }
-    .delete-btn:hover { transform: scale(1.14); }
+    .delete-btn:hover {
+        transform: scale(1.2) rotate(15deg);
+        background: rgba(255, 0, 0, 0.2);
+    }
 
-    /* Модалка */
+    /* 5. Модальное окно (Modal) */
     .modal {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      background: rgba(0,0,0,0.6);
-      z-index: 1000;
+        /* ... (оставляем настройки позиционирования) */
+        display: none;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0,0,0,0.75); /* Более темный оверлей */
+        z-index: 1000;
     }
-
-    .modal.show { display:flex; }
 
     .modal-content {
-      background: var(--card-bg);
-      border-radius: 16px;
-      padding: 18px;
-      width: 92%;
-      max-width: 420px;
-      text-align: center;
-      color: #fff;
-      animation: fadeIn 0.26s ease;
-      border: 1px solid var(--border);
+        background: #252525; /* Темнее фон */
+        border-radius: 25px; /* Больше скругление */
+        padding: 30px;
+        width: 90%;
+        max-width: 350px; /* Чуть уже */
+        text-align: center;
+        color: var(--tg-text);
+        box-shadow: 0 10px 30px var(--shadow-dark); /* Яркая тень */
+        animation: fadeIn 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
     }
 
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(6px) scale(.99); }
-      to { opacity: 1; transform: translateY(0) scale(1); }
+        from { opacity: 0; transform: scale(0.9); }
+        to { opacity: 1; transform: scale(1); }
     }
 
-    #barcode-container {
-      background: #fff;
-      border-radius: 8px;
-      margin-top: 12px;
-      padding: 10px;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-    }
+    .modal-content h3 { margin-top: 0; font-size: 22px; font-weight: 700; color: #fff; }
 
-    #qrcode { margin: 0; }
-    svg#barcode { width:100%; height: auto; display:block; }
+    /* Стили для кода (QR/Barcode) */
+    #qrcode, #barcode {
+        margin: 20px auto 10px;
+        padding: 10px;
+        background: #111; /* Контрастный фон для кода */
+        border-radius: 10px;
+        display: flex;
+        justify-content: center;
+        box-shadow: inset 0 0 5px rgba(0,0,0,0.5);
+    }
+    #qrcode > canvas {
+        border-radius: 8px; /* Скругление QR-кода */
+    }
+    #barcode {
+        width: 100%;
+        height: 100px; /* Фиксированная высота для штрихкода */
+    }
+    /* Сброс стилей для JSBarcode */
+    #barcode svg { max-width: 100%; height: auto; }
+
 
     #modal-number {
-      margin-top: 12px;
-      color: #0b1220;
-      font-weight: 700;
+        margin-top: 15px;
+        opacity: 0.9;
+        font-size: 17px;
+        font-weight: 500;
+        letter-spacing: 1px;
     }
 
     #closeModal {
-      margin-top: 14px;
-      background: var(--accent);
-      color: #fff;
-      border: none;
-      padding: 10px 16px;
-      font-size: 15px;
-      border-radius: 10px;
-      cursor: pointer;
+        margin-top: 20px;
+        background: var(--tg-accent);
+        color: #fff;
+        padding: 12px 25px;
+        font-size: 16px;
+        border-radius: 12px;
+        font-weight: 600;
+        transition: background 0.2s;
+        box-shadow: 0 4px 10px rgba(52, 152, 219, 0.4);
     }
-
-    /* small screens tweak so form content doesn't hit edges */
-    @media (max-width:480px) {
-      .form { padding: 18px; border-radius: 12px 12px 0 0; }
-      #cards { padding: 12px; }
-    }
-  </style>
-</head>
-<body>
-  <header>
-    <span>Мои карты</span>
-    <button id="addBtn" aria-label="Добавить">＋</button>
-  </header>
-
-  <div id="overlay"></div>
-
-  <div class="form" id="form" aria-hidden="true">
-    <div class="row">
-      <input id="shop_name" placeholder="Название магазина" />
-      <input id="card_number" placeholder="Номер карты" />
-    </div>
-
-    <div class="row" style="align-items:center;">
-      <label style="min-width:90px;">Тип кода:</label>
-      <select id="code_type">
-        <option value="barcode">Штрихкод</option>
-        <option value="qr">QR-код</option>
-      </select>
-
-      <div style="flex:1"></div>
-    </div>
-
-    <label>Цвет карты:</label>
-    <div class="colors" id="colorSelect">
-      <!-- classic strong colors -->
-      <div class="color active" style="background:#FF0000" data-color="#FF0000" title="Красный"></div>
-      <div class="color" style="background:#FFCC00" data-color="#FFCC00" title="Жёлтый"></div>
-      <div class="color" style="background:#00C851" data-color="#00C851" title="Зелёный"></div>
-      <div class="color" style="background:#007BFF" data-color="#007BFF" title="Синий"></div>
-      <div class="color" style="background:#AA66CC" data-color="#AA66CC" title="Фиолетовый"></div>
-    </div>
-
-    <div style="display:flex; justify-content:space-between; gap:10px; margin-top:6px;">
-      <button id="saveCard" class="saveBtn">Сохранить карту</button>
-      <button id="saveToServer" style="background:#2b2b2b; color:var(--text); border-radius:8px; border:1px solid var(--border); padding:12px 14px;">Синхр. сейчас</button>
-    </div>
-  </div>
-
-  <main id="cards" aria-live="polite"></main>
-
-  <!-- Modal -->
-  <div class="modal" id="modal" aria-hidden="true">
-    <div class="modal-content" role="dialog" aria-modal="true">
-      <div id="modal-shop" style="font-size:20px; font-weight:700;"></div>
-      <div id="barcode-container">
-        <div id="qrcode"></div>
-        <svg id="barcode"></svg>
-      </div>
-      <div id="modal-number"></div>
-      <div style="display:flex; gap:10px; justify-content:center; margin-top:12px;">
-        <button id="closeModal">Закрыть</button>
-        <button id="deleteModal" style="background:#ff6b6b; border:none; padding:10px 12px; color:#fff; border-radius:8px;">Удалить</button>
-      </div>
-    </div>
-  </div>
-
-  <script>
-  (function(){
-    // <-- EDIT THIS URL if your API is hosted elsewhere -->
-    const API_URL = "https://discount-cards.vercel.app/api/save";
-
-    // storage keys
-    const STORAGE = "dc_cards_v1";
-    const PENDING = "dc_pending_v1";
-
-    // DOM
-    const cardsWrap = document.getElementById("cards");
-    const addBtn = document.getElementById("addBtn");
-    const form = document.getElementById("form");
-    const overlay = document.getElementById("overlay");
-    const saveBtn = document.getElementById("saveCard");
-    const syncBtn = document.getElementById("saveToServer");
-
-    const modal = document.getElementById("modal");
-    const closeModal = document.getElementById("closeModal");
-    const deleteModal = document.getElementById("deleteModal");
-    const modalShop = document.getElementById("modal-shop");
-    const modalNumber = document.getElementById("modal-number");
-    const qrcodeDiv = document.getElementById("qrcode");
-    const barcodeSvg = document.getElementById("barcode");
-
-    // Telegram user (for server filtering)
-    const tg = window.Telegram?.WebApp || {};
-    try { tg.expand?.(); } catch(e){}
-
-    const user = tg.initDataUnsafe?.user || { id: "unknown", username: "anonymous" };
-    const userId = String(user.id);
-
-    // state
-    let selectedColor = "#FF0000";
-    let cards = [];
-    let currentCard = null;
-
-    // helpers
-    function fetchWithTimeout(url, opts={}, timeout=9000){
-      const controller = new AbortController();
-      const id = setTimeout(()=> controller.abort(), timeout);
-      return fetch(url, {...opts, signal: controller.signal}).finally(()=> clearTimeout(id));
-    }
-
-    function toast(text){
-      const el = document.createElement("div");
-      el.textContent = text;
-      Object.assign(el.style, { position:"fixed", left:"50%", transform:"translateX(-50%)", bottom:"24px", background:"rgba(0,0,0,0.7)", color:"#fff", padding:"8px 12px", borderRadius:"8px", zIndex:1200 });
-      document.body.appendChild(el);
-      setTimeout(()=> el.style.opacity = "0", 1600);
-      setTimeout(()=> el.remove(), 2000);
-    }
-
-    // color pickers
-    document.querySelectorAll(".color").forEach(el=>{
-      el.addEventListener("click", ()=>{
-        document.querySelectorAll(".color").forEach(x=>x.classList.remove("active"));
-        el.classList.add("active");
-        selectedColor = el.dataset.color;
-      });
-    });
-
-    // open/close form + overlay
-    addBtn.addEventListener("click", ()=>{
-      form.classList.toggle("active");
-      overlay.classList.toggle("active");
-      form.setAttribute("aria-hidden", !form.classList.contains("active"));
-    });
-    overlay.addEventListener("click", ()=>{
-      form.classList.remove("active");
-      overlay.classList.remove("active");
-      form.setAttribute("aria-hidden", "true");
-    });
-
-    // load from localStorage, then try server
-    async function loadCards(){
-      const local = JSON.parse(localStorage.getItem(STORAGE) || "[]");
-      cards = local.filter(x => String(x.user_id || userId) === String(userId)); // show local user's
-      render();
-
-      // try to fetch from server (network-first): /api/save?user_id=...
-      try {
-        const resp = await fetchWithTimeout(`${API_URL}?user_id=${encodeURIComponent(userId)}`, { method:"GET" }, 9000);
-        if (resp.ok) {
-          const remote = await resp.json();
-          // normalize: ensure user_id present in local copies
-          const withUser = remote.map(r => ({ ...r, user_id: userId }));
-          // save to local cache (replace all user's cards)
-          const allLocal = JSON.parse(localStorage.getItem(STORAGE) || "[]").filter(r => String(r.user_id) !== String(userId));
-          const merged = allLocal.concat(withUser);
-          localStorage.setItem(STORAGE, JSON.stringify(merged));
-          cards = withUser;
-          render();
-          // process pending ops if any
-          processPending();
-        } else {
-          // server returned error -> ignore, keep local
-        }
-      } catch (err) {
-        // offline or server unreachable -> keep local
-        console.warn("Server load failed:", err && err.message);
-      }
-    }
-
-    // render list
-    function render(){
-      cardsWrap.innerHTML = "";
-      if(!cards.length){
-        const msg = document.createElement("div");
-        msg.textContent = "У вас ещё нет карт — нажмите +, чтобы добавить.";
-        Object.assign(msg.style, { color:"rgba(230,237,243,0.65)", padding:"18px", textAlign:"center" });
-        cardsWrap.appendChild(msg);
-        return;
-      }
-
-      cards.forEach((c, idx)=>{
-        const el = document.createElement("div");
-        el.className = "card";
-        el.style.background = c.color || "var(--card-bg)";
-        el.innerHTML = `
-          <button class="delete-btn" data-index="${idx}" title="Удалить">✕</button>
-          <div class="shop">${escapeHtml(c.shop_name)}</div>
-          <div class="number">№ ${escapeHtml(c.card_number)}</div>
-        `;
-        // open modal
-        el.addEventListener("click", () => openModal(c));
-        // delete button
-        el.querySelector(".delete-btn").addEventListener("click", (ev)=>{
-          ev.stopPropagation();
-          confirmDelete(idx);
-        });
-        cardsWrap.appendChild(el);
-      });
-    }
-
-    // escape
-    function escapeHtml(s){ return String(s||"").replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[ch])); }
-
-    // save local + attempt server
-    async function saveCardLocalAndRemote(payload){
-      // add user info
-      const p = {...payload, user_id: userId};
-      // optimistic local add
-      const all = JSON.parse(localStorage.getItem(STORAGE) || "[]");
-      all.push(p);
-      localStorage.setItem(STORAGE, JSON.stringify(all));
-      // update UI
-      await loadCards();
-
-      // attempt server POST
-      try {
-        const resp = await fetchWithTimeout(API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ user: { id: userId, username: user.username || "" }, shop_name: p.shop_name, card_number: p.card_number, color: p.color, type: p.type })
-        }, 9000);
-        if (!resp.ok) throw new Error("server error");
-        // success -> try to refresh from server
-        await loadCards();
-        toast("Карта синхронизирована");
-      } catch (err) {
-        // queue op
-        queuePending({ op:"add", payload: p });
-        toast("Оффлайн: карта сохранена локально и будет синхронизирована");
-        console.warn("POST failed, queued:", err && err.message);
-      }
-    }
-
-    // add button
-    saveBtn.addEventListener("click", ()=>{
-      const shop = document.getElementById("shop_name").value.trim();
-      const num  = document.getElementById("card_number").value.trim();
-      const type = document.getElementById("code_type").value;
-      if(!shop || !num){ alert("Заполните все поля"); return; }
-      const card = { shop_name: shop, card_number: num, color: selectedColor, type, user_id: userId };
-      saveCardLocalAndRemote(card);
-      // clear & close
-      document.getElementById("shop_name").value = "";
-      document.getElementById("card_number").value = "";
-      form.classList.remove("active");
-      overlay.classList.remove("active");
-    });
-
-    // manual sync button (try to push pending ops)
-    syncBtn.addEventListener("click", async ()=>{
-      await processPending();
-      await loadCards();
-      toast("Синхронизация выполнена");
-    });
-
-    // pending queue helpers
-    function queuePending(op){
-      const q = JSON.parse(localStorage.getItem(PENDING) || "[]");
-      q.push(op);
-      localStorage.setItem(PENDING, JSON.stringify(q));
-    }
-
-    async function processPending(){
-      const q = JSON.parse(localStorage.getItem(PENDING) || "[]");
-      if(!q.length) return;
-      if(!navigator.onLine) { console.warn("Offline - cannot process pending"); return; }
-      const keep = [];
-      for(const item of q){
-        try {
-          if(item.op === "add"){
-            // POST
-            await fetchWithTimeout(API_URL, {
-              method:"POST",
-              headers:{"Content-Type":"application/json"},
-              body: JSON.stringify({ user: { id: userId, username: user.username || "" }, shop_name: item.payload.shop_name, card_number: item.payload.card_number, color: item.payload.color, type: item.payload.type })
-            }, 9000);
-          } else if(item.op === "delete"){
-            await fetchWithTimeout(API_URL, {
-              method:"DELETE",
-              headers:{"Content-Type":"application/json"},
-              body: JSON.stringify({ user_id: userId, card_number: item.payload.card_number })
-            }, 9000);
-          }
-          // success: nothing to keep
-        } catch (err) {
-          console.warn("Pending op failed, keep:", err && err.message, item);
-          keep.push(item);
-        }
-      }
-      localStorage.setItem(PENDING, JSON.stringify(keep));
-      // after processing, refresh local cache from server if possible
-      try { await loadCards(); } catch(e){}
-    }
-
-    // delete with confirmation
-    function confirmDelete(index){
-      if(!confirm("Удалить карту? Это действие нельзя отменить.")) return;
-      // get card
-      const card = cards[index];
-      if(!card) return;
-      // optimistic remove from local
-      const allLocal = JSON.parse(localStorage.getItem(STORAGE) || "[]");
-      const remaining = allLocal.filter(r => !(String(r.user_id)===String(userId) && String(r.card_number)===String(card.card_number)));
-      localStorage.setItem(STORAGE, JSON.stringify(remaining));
-      loadCards();
-
-      // try delete on server
-      fetchWithTimeout(API_URL, {
-        method: "DELETE",
-        headers: { "Content-Type":"application/json" },
-        body: JSON.stringify({ user_id: userId, card_number: card.card_number })
-      }, 9000).then(resp => {
-        if(resp && resp.ok){
-          toast("Карта удалена на сервере");
-          processPending(); // try pending
-        } else {
-          // queue for later
-          queuePending({ op:"delete", payload:{ card_number: card.card_number } });
-          toast("Оффлайн: удаление поставлено в очередь");
-        }
-      }).catch(err => {
-        queuePending({ op:"delete", payload:{ card_number: card.card_number } });
-        toast("Оффлайн: удаление поставлено в очередь");
-      });
-    }
-
-    // modal open
-    function openModal(card){
-      currentCard = card;
-      modalShop.textContent = card.shop_name;
-      modalNumber.textContent = "№ " + card.card_number;
-      qrcodeDiv.innerHTML = "";
-      barcodeSvg.innerHTML = "";
-
-      // show QR or barcode; barcode is rendered on white container for readability
-      if(card.type === "qr"){
-        qrcodeDiv.style.display = "block";
-        barcodeSvg.style.display = "none";
-        new QRCode(qrcodeDiv, { text: card.card_number, width: 220, height: 220, correctLevel: QRCode.CorrectLevel.H });
-      } else {
-        qrcodeDiv.style.display = "none";
-        barcodeSvg.style.display = "block";
-        try {
-          JsBarcode("#barcode", String(card.card_number), { format:"CODE128", displayValue:true, lineColor:"#000", background:"#fff", margin:8 });
-        } catch(e){
-          console.warn("JsBarcode error", e);
-        }
-      }
-      modal.classList.add("show");
-      modal.setAttribute("aria-hidden","false");
-    }
-
-    closeModal.addEventListener("click", ()=> {
-      modal.classList.remove("show");
-      modal.setAttribute("aria-hidden","true");
-      qrcodeDiv.innerHTML = ""; barcodeSvg.innerHTML = "";
-    });
-
-    deleteModal.addEventListener("click", ()=> {
-      if(!currentCard) return;
-      if(!confirm("Подтвердите удаление этой карты")) return;
-      // optimistic local delete
-      const allLocal = JSON.parse(localStorage.getItem(STORAGE) || "[]");
-      const remaining = allLocal.filter(r => !(String(r.user_id)===String(userId) && String(r.card_number)===String(currentCard.card_number)));
-      localStorage.setItem(STORAGE, JSON.stringify(remaining));
-      modal.classList.remove("show");
-      loadCards();
-
-      // attempt server delete
-      fetchWithTimeout(API_URL, {
-        method:"DELETE",
-        headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({ user_id: userId, card_number: currentCard.card_number })
-      }, 9000).then(resp => {
-        if(resp && resp.ok) { toast("Карта удалена"); processPending(); }
-        else { queuePending({ op:"delete", payload:{ card_number: currentCard.card_number } }); toast("Удаление в очереди"); }
-      }).catch(err => {
-        queuePending({ op:"delete", payload:{ card_number: currentCard.card_number } });
-        toast("Удаление запланировано (офлайн)");
-      });
-    });
-
-    // process pending on online
-    window.addEventListener("online", ()=>{
-      toast("Сеть вернулась — синхронизирую");
-      processPending();
-    });
-
-    // register service worker (optional) — will fail silently on hosts that don't allow
-    if('serviceWorker' in navigator){
-      navigator.serviceWorker?.register('/sw.js').then(()=> console.log("SW registered")).catch(()=>{/*ignore*/});
-    }
-
-    // init
-    loadCards();
-    // expose for debug
-    window._dc_load = loadCards;
-    window._dc_processPending = processPending;
-  })();
-  </script>
-</body>
-</html>
+</style>
