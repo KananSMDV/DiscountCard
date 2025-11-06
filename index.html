@@ -9,74 +9,106 @@
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     body {
-      font-family: system-ui, sans-serif;
-      background: var(--tg-theme-bg-color, #f5f5f5);
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--tg-theme-bg-color, #f4f4f6);
       color: var(--tg-theme-text-color, #222);
       margin: 0;
       padding: 0;
     }
+
     header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 15px 20px;
-      font-size: 20px;
+      padding: 16px 20px;
+      font-size: 22px;
       background: var(--tg-theme-bg-color, #fff);
       border-bottom: 1px solid #ddd;
+      font-weight: 600;
     }
+
     #addBtn {
-      font-size: 26px;
+      font-size: 28px;
       border: none;
       background: none;
       cursor: pointer;
       color: var(--tg-theme-button-color, #2a9d8f);
     }
+
+    /* Форма добавления */
     .form {
       display: none;
       flex-direction: column;
       gap: 10px;
       padding: 20px;
       background: #fff;
+      border-bottom: 1px solid #eee;
     }
+
     input, select, button {
-      padding: 10px;
+      padding: 12px;
       font-size: 16px;
-      border-radius: 8px;
+      border-radius: 12px;
       border: 1px solid #ccc;
     }
+
     .colors {
       display: flex;
-      gap: 8px;
+      gap: 10px;
       margin-top: 5px;
     }
+
     .color {
-      width: 30px;
-      height: 30px;
+      width: 32px;
+      height: 32px;
       border-radius: 50%;
       cursor: pointer;
       border: 2px solid transparent;
+      transition: transform 0.2s ease;
     }
-    .color.active {
-      border: 2px solid #000;
-    }
-    #cards {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-      gap: 12px;
-      padding: 20px;
-    }
-    .card {
-      border-radius: 16px;
-      padding: 16px;
-      color: #fff;
-      font-weight: bold;
-      text-align: left;
-      cursor: pointer;
-      transition: transform 0.15s ease;
-    }
-    .card:hover { transform: scale(1.03); }
+    .color:hover { transform: scale(1.1); }
+    .color.active { border: 2px solid #000; }
 
-    /* Modal */
+    /* Сетка карточек */
+    #cards {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding: 16px;
+    }
+
+    .card {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      border-radius: 20px;
+      padding: 20px;
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+    }
+
+    .card .shop {
+      font-size: 20px;
+      letter-spacing: 0.5px;
+    }
+
+    .card .number {
+      opacity: 0.8;
+      font-size: 14px;
+      text-align: right;
+      margin-top: 30px;
+    }
+
+    /* Модалка */
     .modal {
       position: fixed;
       top: 0; left: 0;
@@ -84,18 +116,47 @@
       display: none;
       align-items: center;
       justify-content: center;
-      background: rgba(0,0,0,0.5);
+      background: rgba(0,0,0,0.4);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
     }
+
     .modal-content {
       background: #fff;
-      border-radius: 16px;
-      padding: 20px;
+      border-radius: 20px;
+      padding: 24px;
       width: 90%;
       max-width: 400px;
       text-align: center;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+      animation: fadeIn 0.25s ease;
     }
-    .modal-content h3 { margin-top: 0; }
-    svg, #qrcode { margin-top: 10px; width: 100%; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.9); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .modal-content h3 {
+      margin-top: 0;
+      font-size: 22px;
+    }
+
+    svg, #qrcode {
+      margin-top: 10px;
+      width: 100%;
+    }
+
+    #closeModal {
+      margin-top: 18px;
+      background: #2a9d8f;
+      color: #fff;
+      border: none;
+      padding: 12px 20px;
+      font-size: 16px;
+      border-radius: 12px;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -166,7 +227,10 @@
         const div = document.createElement("div");
         div.className = "card";
         div.style.background = c.color || "#2a9d8f";
-        div.textContent = c.shop_name;
+        div.innerHTML = `
+          <div class="shop">${c.shop_name}</div>
+          <div class="number">№ ${c.card_number}</div>
+        `;
         div.onclick = () => openModal(c);
         cardsDiv.appendChild(div);
       });
