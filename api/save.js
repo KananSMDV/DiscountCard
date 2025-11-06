@@ -5,11 +5,7 @@ export default async function handler(req, res) {
 
   try {
     const data = req.body;
-
     console.log("📩 Получены данные:", data);
-
-    // здесь можешь добавить сохранение в базу данных, Google Sheets и т.д.
-
     return res.status(200).json({ success: true, received: data });
   } catch (err) {
     console.error(err);
