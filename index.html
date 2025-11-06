@@ -9,7 +9,6 @@
     
     <style>
         body {
-            /* Используем переменные темы Telegram для стилизации */
             background-color: var(--tg-theme-bg-color, #f4f4f5);
             color: var(--tg-theme-text-color, #1f1f1f);
             font-family: system-ui, sans-serif;
@@ -27,9 +26,8 @@
             background-color: var(--tg-theme-secondary-bg-color, #ffffff);
             color: var(--tg-theme-text-color, #1f1f1f);
         }
-        /* Стили для обычной кнопки */
         button {
-            background-color: var(--tg-theme-button-color, #0088cc); /* Цвет кнопки Telegram */
+            background-color: var(--tg-theme-button-color, #0088cc);
             color: var(--tg-theme-button-text-color, white);
             border: none;
             padding: 10px 20px;
@@ -39,9 +37,6 @@
             margin-top: 15px;
             width: 90%;
             max-width: 300px;
-        }
-        button:active {
-            opacity: 0.8;
         }
     </style>
 </head>
@@ -53,7 +48,6 @@
     <form id="add-card-form">
         <input type="text" id="cardName" placeholder="Название карты (Магнит)" required>
         <input type="text" id="cardNumber" placeholder="Номер или код (только цифры)" required>
-        
         <button type="submit">Сохранить Карту</button> 
     </form>
 
@@ -74,16 +68,12 @@
             return;
         }
 
-        // --------------------------------------------------
-        // ФУНКЦИЯ ДОБАВЛЕНИЯ КАРТ (POST-запрос)
-        // --------------------------------------------------
         async function addCard(e) {
             e.preventDefault(); 
 
             const cardName = document.getElementById('cardName').value.trim();
             const cardNumber = document.getElementById('cardNumber').value.trim();
             const saveButton = document.querySelector('#add-card-form button');
-
             const barcodeType = 'CODE128'; 
 
             if (!cardName || !cardNumber) {
@@ -91,21 +81,22 @@
                  return;
             }
 
-            // Визуальная индикация загрузки на кнопке
             saveButton.textContent = 'Сохранение...';
             saveButton.disabled = true;
 
             try {
+                // ВАЖНО: АДРЕС API ИЗМЕНЕН НА /api/cards
                 const response = await fetch(`${API_BASE_URL}/api/cards`, { 
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
+                    // Отправляем данные в формате, который ждет cards.js
                     body: JSON.stringify({ userId, cardName, cardNumber, barcodeType }) 
                 });
 
                 const result = await response.json();
 
                 if (response.ok) {
-                    tg.showAlert(`✅ Карта "${cardName}" успешно отправлена на сервер!`);
+                    tg.showAlert(`✅ Карта "${cardName}" успешно сохранена!`);
                     document.getElementById('add-card-form').reset(); 
                 } else {
                     throw new Error(result.details || result.error || 'Ошибка сервера.');
@@ -120,13 +111,9 @@
             }
         }
         
-        // --------------------------------------------------
-        // ИНИЦИАЛИЗАЦИЯ
-        // --------------------------------------------------
         const form = document.getElementById('add-card-form');
         form.addEventListener('submit', addCard);
 
-        // Убедимся, что MainButton скрыта (если она была показана где-то ранее)
         if (tg.MainButton.isVisible) {
             tg.MainButton.hide(); 
         }
