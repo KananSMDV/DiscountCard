@@ -1,48 +1,36 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Мои скидочные карты</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
   <style>
     body {
       font-family: "Inter", sans-serif;
-      background: #0f0f0f;
+      background: #121212;
       color: white;
       margin: 0;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
+      padding: 20px;
     }
-    header {
+    h1 { text-align: center; margin-bottom: 20px; }
+    .card {
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 15px 20px;
-      background: #181818;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      transition: transform 0.2s;
     }
-    header h1 { font-size: 20px; }
-    header button {
-      background: #0088cc;
-      border: none;
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      color: white;
-      font-size: 24px;
-      cursor: pointer;
-    }
-    #addForm {
-      display: none;
+    .card:hover { transform: scale(1.02); }
+    .card img { width: 50px; height: 50px; border-radius: 8px; margin-right: 12px; }
+    form {
+      display: flex;
       flex-direction: column;
-      gap: 8px;
-      background: #181818;
-      padding: 15px;
+      gap: 10px;
+      margin-bottom: 25px;
     }
     input {
       padding: 10px;
@@ -50,147 +38,88 @@
       border-radius: 8px;
       font-size: 16px;
     }
-    .colors {
-      display: flex;
-      gap: 10px;
-      margin: 8px 0;
-    }
-    .color-dot {
-      width: 30px; height: 30px; border-radius: 50%;
-      cursor: pointer; border: 2px solid transparent;
-    }
-    .color-dot.selected { border: 2px solid white; }
-    #cards {
-      flex: 1;
-      overflow-y: auto;
-      padding: 15px;
-      display: grid;
-      gap: 12px;
-    }
-    .card {
-      border-radius: 14px;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    button {
+      background: #0088cc;
+      border: none;
+      padding: 10px;
+      border-radius: 8px;
+      color: white;
+      font-weight: 600;
       cursor: pointer;
-      transition: transform 0.2s;
+      transition: 0.3s;
     }
-    .card:hover { transform: scale(1.02); }
-    .modal {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.7);
-      display: none;
-      align-items: center;
-      justify-content: center;
-    }
-    .modal-content {
-      background: #222;
-      padding: 20px;
-      border-radius: 12px;
-      text-align: center;
-    }
-    canvas { margin: 10px 0; background: white; padding: 5px; border-radius: 8px; }
+    button:hover { background: #006da1; }
   </style>
 </head>
 <body>
-  <header>
-    <h1>Мои карты</h1>
-    <button id="toggleForm">＋</button>
-  </header>
+  <h1>Мои скидочные карты</h1>
 
   <form id="addForm">
-    <input type="text" id="shop_name" placeholder="Название магазина" required />
-    <input type="text" id="card_number" placeholder="Номер карты" required />
-    <div class="colors">
-      <div class="color-dot" data-color="#ff3b30" style="background:#ff3b30"></div>
-      <div class="color-dot" data-color="#ff9500" style="background:#ff9500"></div>
-      <div class="color-dot" data-color="#34c759" style="background:#34c759"></div>
-      <div class="color-dot" data-color="#007aff" style="background:#007aff"></div>
-      <div class="color-dot" data-color="#5856d6" style="background:#5856d6"></div>
-    </div>
-    <button type="submit">Сохранить</button>
+    <input type="text" id="shop_name" placeholder="Название магазина" required>
+    <input type="text" id="card_number" placeholder="Номер карты" required>
+    <input type="text" id="color" placeholder="Цвет (например, #ff5733)" value="#0088cc">
+    <input type="text" id="logo_url" placeholder="URL логотипа (необязательно)">
+    <button type="submit">Добавить карту</button>
   </form>
 
   <div id="cards"></div>
-
-  <div class="modal" id="modal">
-    <div class="modal-content">
-      <h2 id="modal-title"></h2>
-      <p id="modal-number"></p>
-      <canvas id="barcode"></canvas>
-      <canvas id="qrcode"></canvas>
-      <button onclick="closeModal()">Закрыть</button>
-    </div>
-  </div>
 
   <script>
     const tg = window.Telegram.WebApp;
     tg.expand();
     const apiUrl = "https://discount-cards.vercel.app/api/save";
-    const user = tg.initDataUnsafe.user;
-    let selectedColor = "#007aff";
-
-    document.querySelectorAll(".color-dot").forEach(dot => {
-      dot.addEventListener("click", () => {
-        document.querySelectorAll(".color-dot").forEach(d => d.classList.remove("selected"));
-        dot.classList.add("selected");
-        selectedColor = dot.dataset.color;
-      });
-    });
-    document.querySelector(".color-dot[data-color='#007aff']").classList.add("selected");
-
-    document.getElementById("toggleForm").onclick = () => {
-      const form = document.getElementById("addForm");
-      form.style.display = form.style.display === "flex" ? "none" : "flex";
-    };
 
     async function loadCards() {
-      const res = await fetch(`${apiUrl}?user_id=${user.id}`);
+      const res = await fetch(apiUrl);
       const cards = await res.json();
       const list = document.getElementById("cards");
       list.innerHTML = "";
       cards.forEach(c => {
         const div = document.createElement("div");
         div.className = "card";
-        div.style.background = c.color || "#333";
-        div.innerHTML = `<strong>${c.shop_name}</strong><br><small>${c.card_number}</small>`;
-        div.onclick = () => openModal(c.shop_name, c.card_number);
+        div.style.background = c.color || "#2a2a2a";
+        div.innerHTML = `
+          <div style="display:flex;align-items:center;">
+            ${c.logo_url ? `<img src="${c.logo_url}" alt="logo">` : ""}
+            <div>
+              <strong>${c.shop_name}</strong><br>
+              <small>${c.card_number}</small>
+            </div>
+          </div>
+        `;
         list.appendChild(div);
       });
     }
 
-    document.getElementById("addForm").onsubmit = async e => {
+    document.getElementById("addForm").addEventListener("submit", async e => {
       e.preventDefault();
       const shop_name = document.getElementById("shop_name").value.trim();
       const card_number = document.getElementById("card_number").value.trim();
+      const color = document.getElementById("color").value.trim();
+      const logo_url = document.getElementById("logo_url").value.trim();
+
       const res = await fetch(apiUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user, shop_name, card_number, color: selectedColor }),
+        body: JSON.stringify({
+          user: tg.initDataUnsafe.user,
+          shop_name,
+          card_number,
+          color,
+          logo_url
+        })
       });
+
       const data = await res.json();
       if (data.success) {
         tg.HapticFeedback.notificationOccurred("success");
-        e.target.reset();
         loadCards();
-      } else alert("Ошибка при сохранении!");
-    };
-
-    function openModal(shop, number) {
-      const modal = document.getElementById("modal");
-      modal.style.display = "flex";
-      document.getElementById("modal-title").textContent = shop;
-      document.getElementById("modal-number").textContent = number;
-      JsBarcode("#barcode", number, { format: "CODE128", displayValue: false });
-      QRCode.toCanvas(document.getElementById("qrcode"), number, { width: 150 });
-    }
-    function closeModal() { document.getElementById("modal").style.display = "none"; }
+      } else {
+        alert("Ошибка при добавлении карты!");
+      }
+    });
 
     loadCards();
   </script>
 </body>
 </html>
-
