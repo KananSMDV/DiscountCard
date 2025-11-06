@@ -99,20 +99,22 @@
             -moz-appearance: textfield;
         }
 
-        /* Выбор цвета */
+        /* Выбор цвета (больше цветов, меньше размер) */
         .colors {
             display: flex;
-            gap: 10px;
-            justify-content: space-around;
+            flex-wrap: wrap; /* Позволяем переносить на следующую строку */
+            gap: 6px; /* **Уменьшил отступ** */
+            justify-content: flex-start; /* Выравнивание по левому краю */
             padding: 5px 0;
         }
 
         .color {
-            width: 30px;
-            height: 30px;
+            width: 24px; /* **Уменьшил размер** */
+            height: 24px; /* **Уменьшил размер** */
             border-radius: 50%;
             border: 3px solid transparent;
             transition: transform 0.2s ease, box-shadow 0.2s ease, border 0.2s ease;
+            flex-shrink: 0; /* Чтобы не сжимались */
         }
         .color.active { 
             border: 3px solid var(--text-light); 
@@ -144,9 +146,9 @@
 
         .card {
             position: relative;
-            display: flex; /* Используем flexbox */
-            flex-direction: column; /* Элементы в столбик */
-            justify-content: space-between; /* Распределяем по вертикали */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
             min-height: 80px;
             border-radius: 12px;
             padding: 16px 20px;
@@ -166,8 +168,7 @@
             font-size: 18px;
             letter-spacing: 0.5px;
             text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
-            /* align-self: flex-start; */ /* Убрал, чтобы не мешало text-align */
-            text-align: left; /* Текст слева */
+            text-align: left;
         }
 
         .card .number {
@@ -175,12 +176,9 @@
             font-size: 14px;
             font-family: monospace;
             text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
-            /* align-self: flex-end; */ /* Убрал, чтобы не мешало text-align */
-            text-align: right; /* Текст справа */
+            text-align: right;
         }
         
-        /* УДАЛЕНА КНОПКА УДАЛЕНИЯ НА КАРТОЧКЕ */
-
         /* Модальное окно */
         .modal {
             position: fixed;
@@ -215,7 +213,7 @@
         svg, #qrcode {
             margin: 15px auto 20px;
             width: 90%;
-            max-width: 220px; /* **Увеличил максимальный размер кода** */
+            max-width: 220px;
             background: #ffffff;
             padding: 8px;
             border-radius: 8px;
@@ -228,29 +226,23 @@
             margin-top: 20px;
         }
 
+        #deleteCard, #closeModal {
+            flex: 1; /* **Кнопки одинакового размера** */
+            padding: 8px 12px;
+            font-size: 14px;
+            font-weight: 600;
+        }
         #deleteCard {
             background: var(--delete-color); 
             color: #ffffff;
-            font-weight: 600;
-            flex-grow: 1; 
-            padding: 8px 12px; /* **Уменьшил паддинг** */
-            font-size: 14px; /* **Уменьшил размер шрифта** */
-            display: flex; /* Для выравнивания текста и иконки */
-            align-items: center;
-            justify-content: center;
         }
         #deleteCard:active {
             filter: brightness(0.9);
         }
-        /* УДАЛЕНА ИКОНКА ИЗ КНОПКИ УДАЛЕНИЯ */
         
         #closeModal {
             background: var(--bg-input); 
             color: var(--text-subtle);
-            flex-basis: 90px; /* **Уменьшил ширину** */
-            flex-grow: 0;
-            padding: 8px 12px; /* **Уменьшил паддинг** */
-            font-size: 14px; /* **Уменьшил размер шрифта** */
         }
     </style>
 </head>
@@ -267,16 +259,10 @@
         <input id="card_number" placeholder="Номер карты" type="number" pattern="\d*" />
         <label style="color: var(--text-subtle); margin-top: 5px; font-size: 13px;">Цвет карты:</label>
         <div class="colors" id="colorSelect">
-            <div class="color active" style="background:#ff4d4f" data-color="#ff4d4f"></div>
-            <div class="color" style="background:#fadb14" data-color="#fadb14"></div>
-            <div class="color" style="background:#52c41a" data-color="#52c41a"></div>
-            <div class="color" style="background:#1890ff" data-color="#1890ff"></div>
-            <div class="color" style="background:#595959" data-color="#595959"></div>
-        </div>
+            <div class="color active" style="background:#E74C3C" data-color="#E74C3C"></div> <div class="color" style="background:#E67E22" data-color="#E67E22"></div> <div class="color" style="background:#F1C40F" data-color="#F1C40F"></div> <div class="color" style="background:#2ECC71" data-color="#2ECC71"></div> <div class="color" style="background:#3498DB" data-color="#3498DB"></div> <div class="color" style="background:#9B59B6" data-color="#9B59B6"></div> <div class="color" style="background:#1ABC9C" data-color="#1ABC9C"></div> <div class="color" style="background:#34495E" data-color="#34495E"></div> <div class="color" style="background:#7F8C8D" data-color="#7F8C8D"></div> </div>
         <label style="color: var(--text-subtle); margin-top: 5px; font-size: 13px;">Тип кода:</label>
         <select id="code_type">
-            <option value="barcode">Штрихкод (Code 128)</option>
-            <option value="qr">QR-код</option>
+            <option value="barcode">Штрихкод</option> <option value="qr">QR-код</option>
         </select>
         <button id="saveCard">Сохранить карту</button>
     </div>
@@ -332,8 +318,7 @@
         const qrcodeDiv = document.getElementById("qrcode");
         const deleteBtn = document.getElementById("deleteCard");
 
-        let selectedColor = "#ff4d4f"; 
-        let allCards = []; 
+        let selectedColor = "#E74C3C"; // Новый цвет по умолчанию (красный)
 
         // 1. Обработчик выбора цвета
         document.querySelectorAll(".color").forEach(c => {
@@ -362,7 +347,7 @@
             allCards.forEach(c => {
                 const div = document.createElement("div");
                 div.className = "card";
-                div.style.background = c.color || "#ff4d4f";
+                div.style.background = c.color || "#E74C3C"; // Новый цвет по умолчанию
                 div.dataset.cardNumber = c.card_number;
                 
                 div.innerHTML = `
@@ -459,8 +444,8 @@
                 qrcodeDiv.style.display = 'block';
                 new QRCode(qrcodeDiv, { 
                     text: card.card_number, 
-                    width: 220, /* Увеличенный размер */
-                    height: 220, /* Увеличенный размер */
+                    width: 220,
+                    height: 220,
                     colorDark: darkColor, 
                     colorLight: lightColor 
                 });
