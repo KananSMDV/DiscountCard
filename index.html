@@ -37,13 +37,20 @@
             width: 90%;
             max-width: 300px;
         }
+        #add-card-form {
+            /* Скрываем форму по умолчанию */
+            display: none; 
+        }
     </style>
 </head>
 <body>
 
-    <h2>💾 Добавить Новую Карту</h2>
+    <h2>💳 Ваша Дисконтная Карта</h2>
+    
+    <div id="status-message">Загрузка данных пользователя...</div>
     
     <form id="add-card-form">
+        <p>У вас пока нет сохраненных карт. Введите данные для создания:</p>
         <input type="text" id="cardName" placeholder="Название карты (Лента)" required>
         <input type="text" id="cardNumber" placeholder="Номер или код" required>
         <button type="submit">Сохранить Карту</button> 
@@ -59,11 +66,49 @@
         const user = tg.initDataUnsafe?.user;
         const userId = user?.id; 
 
+        const form = document.getElementById('add-card-form');
+        const statusMessage = document.getElementById('status-message');
+
         if (!userId) {
-            tg.showAlert('❌ ID пользователя не найден. Запустите через Telegram.');
+            statusMessage.innerHTML = '<p style="color: red;">❌ ID пользователя не найден. Запустите через Telegram.</p>';
             return;
         }
 
+        // --------------------------------------------------
+        // ФУНКЦИЯ ПРОВЕРКИ СУЩЕСТВОВАНИЯ ДАННЫХ (GET-запрос)
+        // --------------------------------------------------
+        async function checkExistingCards() {
+            statusMessage.innerHTML = 'Проверка сохраненных карт...';
+
+            try {
+                // Делаем GET-запрос на API
+                const response = await fetch(`${API_BASE_URL}/api/cards?userId=${userId}`);
+                const data = await response.json();
+
+                if (response.ok && data.cards && data.cards.length > 0) {
+                    // Данные ЕСТЬ: Показываем сообщение о наличии карты
+                    const firstCard = data.cards[0];
+                    statusMessage.innerHTML = `
+                        <p style="color: green;">✅ У вас уже есть сохраненная карта:</p>
+                        <b>${firstCard.name}</b>: ${firstCard.number}
+                        <p>Для изменения или добавления другой карты нужен расширенный интерфейс.</p>
+                    `;
+                    form.style.display = 'none'; // Скрываем форму
+                } else {
+                    // Данных НЕТ: Показываем форму для создания
+                    statusMessage.innerHTML = '';
+                    form.style.display = 'block';
+                }
+
+            } catch (error) {
+                console.error('Ошибка проверки карты:', error);
+                statusMessage.innerHTML = '<p style="color: red;">Ошибка связи с сервером. Попробуйте позже.</p>';
+            }
+        }
+        
+        // --------------------------------------------------
+        // ФУНКЦИЯ ДОБАВЛЕНИЯ КАРТ (POST-запрос)
+        // --------------------------------------------------
         async function addCard(e) {
             e.preventDefault(); 
 
@@ -71,7 +116,6 @@
             const cardNumber = document.getElementById('cardNumber').value.trim();
             const saveButton = document.querySelector('#add-card-form button');
             
-            // Временно хардкодим тип кода
             const barcodeType = 'CODE128'; 
 
             if (!cardName || !cardNumber) {
@@ -83,11 +127,9 @@
             saveButton.disabled = true;
 
             try {
-                // ВАЖНО: Отправляем на новый адрес /api/cards
                 const response = await fetch(`${API_BASE_URL}/api/cards`, { 
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    // Отправляем правильный набор данных
                     body: JSON.stringify({ userId, cardName, cardNumber, barcodeType }) 
                 });
 
@@ -96,6 +138,8 @@
                 if (response.ok && result.success) {
                     tg.showAlert(`✅ Карта "${cardName}" успешно сохранена!`);
                     document.getElementById('add-card-form').reset(); 
+                    // После успешного сохранения перезапускаем проверку
+                    checkExistingCards(); 
                 } else {
                     throw new Error(result.details || result.error || 'Ошибка сервера.');
                 }
@@ -109,12 +153,14 @@
             }
         }
         
-        const form = document.getElementById('add-card-form');
         form.addEventListener('submit', addCard);
 
         if (tg.MainButton.isVisible) {
             tg.MainButton.hide(); 
         }
+
+        // Запускаем проверку при загрузке
+        checkExistingCards(); 
     </script>
 </body>
 </html>
