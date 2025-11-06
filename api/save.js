@@ -38,6 +38,31 @@ export default async function handler(req, res) {
     }
   }
 
+  // Удаление карты (DELETE)
+if (req.method === "DELETE") {
+  try {
+    const { user_id, card_number } = req.body;
+    if (!user_id || !card_number) {
+      return res.status(400).json({ error: "user_id и card_number обязателены" });
+    }
+
+    const rows = await sheet.getRows();
+    const rowToDelete = rows.find(
+      r => String(r.get("user_id")) === String(user_id) && r.get("card_number") === card_number
+    );
+
+    if (!rowToDelete) {
+      return res.status(404).json({ error: "Карта не найдена" });
+    }
+
+    await rowToDelete.delete();
+    return res.status(200).json({ success: true });
+  } catch (err) {
+    console.error("❌ Ошибка при удалении:", err);
+    return res.status(500).json({ error: err.message });
+  }
+}
+
   // 📄 Получение карт пользователя
   if (req.method === "GET") {
     try {
