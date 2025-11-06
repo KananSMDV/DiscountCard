@@ -1,255 +1,424 @@
-<style>
-    /* 1. Обновленные Цвета и Переменные */
-    :root {
-        --tg-bg: #121212; /* Более мягкий фон */
-        --tg-card: #1e1e1e; /* Фон для карточек и форм */
-        --tg-text: #e0e0e0; /* Светлый текст */
-        --tg-text-secondary: #a0a0a0; /* Вторичный текст */
-        --tg-accent: #3498db; /* Чистый синий акцент */
-        --shadow-light: rgba(255, 255, 255, 0.05);
-        --shadow-dark: rgba(0, 0, 0, 0.5);
-    }
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Мои карты</title>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-    body {
-        font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
-        background: var(--tg-bg);
-        color: var(--tg-text);
-        margin: 0;
-        padding: 0;
-        transition: background 0.3s;
-        min-height: 100vh; /* Чтобы фон был на весь экран */
-    }
+    <style>
+        /* 1. Обновленные Цвета и Переменные */
+        :root {
+            --tg-bg: #121212; /* Более мягкий фон */
+            --tg-card: #1e1e1e; /* Фон для карточек и форм */
+            --tg-text: #e0e0e0; /* Светлый текст */
+            --tg-text-secondary: #a0a0a0; /* Вторичный текст */
+            --tg-accent: #3498db; /* Чистый синий акцент */
+            --shadow-light: rgba(255, 255, 255, 0.05);
+            --shadow-dark: rgba(0, 0, 0, 0.5);
+        }
 
-    /* 2. Шапка (Header) */
-    header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 16px 20px;
-        font-size: 24px; /* Чуть больше */
-        background: var(--tg-bg);
-        border-bottom: 1px solid #2a2a2a; /* Более мягкий разделитель */
-        font-weight: 700;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3); /* Легкая тень для "поднятия" */
-        position: sticky;
-        top: 0;
-        z-index: 50;
-    }
+        body {
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+            background: var(--tg-bg);
+            color: var(--tg-text);
+            margin: 0;
+            padding: 0;
+            transition: background 0.3s;
+            min-height: 100vh;
+        }
 
-    #addBtn {
-        font-size: 32px; /* Больше и заметнее */
-        border: none;
-        background: none;
-        cursor: pointer;
-        color: var(--tg-accent);
-        transition: transform 0.2s, color 0.2s;
-        line-height: 1; /* Убрать лишний отступ */
-        padding: 0;
-    }
-    #addBtn:hover {
-        transform: scale(1.15) rotate(90deg);
-        color: #5dade2; /* Легкий эффект при наведении */
-    }
+        /* 2. Шапка (Header) */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            font-size: 24px;
+            background: var(--tg-bg);
+            border-bottom: 1px solid #2a2a2a;
+            font-weight: 700;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
 
-    /* 3. Панель добавления (Form) */
-    .form {
-        position: fixed;
-        bottom: -100%;
-        left: 0;
-        width: 100%;
-        background: var(--tg-card);
-        border-top: none; /* Убираем жесткую границу */
-        display: flex;
-        flex-direction: column;
-        gap: 15px;
-        padding: 25px 20px 40px; /* Больше отступ снизу */
-        border-radius: 25px 25px 0 0;
-        box-shadow: 0 -8px 30px var(--shadow-dark); /* Мягкая тень снизу */
-        transition: bottom 0.4s cubic-bezier(0.4, 0, 0.2, 1); /* Плавная анимация */
-        z-index: 100;
-        box-sizing: border-box; /* Важно для padding/width */
-    }
+        #addBtn {
+            font-size: 32px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            color: var(--tg-accent);
+            transition: transform 0.2s, color 0.2s;
+            line-height: 1;
+            padding: 0;
+        }
+        #addBtn:hover {
+            transform: scale(1.15) rotate(90deg);
+            color: #5dade2;
+        }
 
-    .form.active {
-        bottom: 0;
-    }
+        /* 3. Панель добавления (Form) */
+        .form {
+            position: fixed;
+            bottom: -100%;
+            left: 0;
+            width: 100%;
+            background: var(--tg-card);
+            border-top: none;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            padding: 25px 20px 40px;
+            border-radius: 25px 25px 0 0;
+            box-shadow: 0 -8px 30px var(--shadow-dark);
+            transition: bottom 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 100;
+            box-sizing: border-box;
+        }
 
-    input, select {
-        padding: 15px; /* Больше отступ */
-        font-size: 17px;
-        border-radius: 12px;
-        border: 1px solid #333; /* Легкая граница */
-        background: #252525;
-        color: var(--tg-text);
-        transition: border-color 0.3s;
-    }
-    input:focus, select:focus {
-        border-color: var(--tg-accent);
-        background: #282828;
-    }
-    ::placeholder {
-        color: var(--tg-text-secondary);
-        opacity: 0.7;
-    }
+        .form.active {
+            bottom: 0;
+        }
+        
+        label {
+            color: var(--tg-text-secondary);
+            font-size: 14px;
+            margin-top: 5px;
+        }
 
-    button#saveCard {
-        padding: 15px;
-        font-size: 18px;
-        border-radius: 12px;
-        background: var(--tg-accent);
-        color: #fff;
-        font-weight: 700;
-        box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3); /* Тень в цвет кнопки */
-        transition: background 0.2s, transform 0.1s;
-    }
-    button#saveCard:active {
-        transform: scale(0.98);
-        box-shadow: none;
-    }
+        input, select {
+            padding: 15px;
+            font-size: 17px;
+            border-radius: 12px;
+            border: 1px solid #333;
+            background: #252525;
+            color: var(--tg-text);
+            transition: border-color 0.3s;
+        }
+        input:focus, select:focus {
+            border-color: var(--tg-accent);
+            background: #282828;
+        }
+        ::placeholder {
+            color: var(--tg-text-secondary);
+            opacity: 0.7;
+        }
 
-    .colors {
-        display: flex;
-        gap: 12px;
-        margin-top: 10px;
-        flex-wrap: wrap; /* Для мобильных */
-    }
+        button#saveCard {
+            padding: 15px;
+            font-size: 18px;
+            border-radius: 12px;
+            background: var(--tg-accent);
+            color: #fff;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+            transition: background 0.2s, transform 0.1s;
+        }
+        button#saveCard:active {
+            transform: scale(0.98);
+            box-shadow: none;
+        }
 
-    .color {
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        cursor: pointer;
-        border: 3px solid transparent; /* Толще рамка */
-        box-shadow: 0 2px 5px rgba(0,0,0,0.4);
-        transition: transform 0.2s, border-color 0.2s;
-    }
-    .color:hover { transform: scale(1.1); }
-    .color.active {
-        border-color: #fff; /* Яркая белая рамка для активного цвета */
-        transform: scale(1.1);
-        box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
-    }
+        .colors {
+            display: flex;
+            gap: 12px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
 
-    /* 4. Список карт */
-    #cards {
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-        padding: 20px;
-    }
+        .color {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 3px solid transparent;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        .color:hover { transform: scale(1.1); }
+        .color.active {
+            border-color: #fff;
+            transform: scale(1.1);
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+        }
 
-    .card {
-        position: relative;
-        background: var(--tg-card);
-        border-radius: 20px; /* Чуть более скругленные */
-        padding: 20px;
-        color: #fff;
-        /* Красивая мягкая тень */
-        box-shadow: 0 6px 20px rgba(0,0,0,0.6), inset 0 0 0 1px #2a2a2a;
-        cursor: pointer;
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-        /* Стили для текста внутри, чтобы хорошо смотрелось на цветном фоне */
-        text-shadow: 0 1px 2px rgba(0,0,0,0.2);
-    }
+        /* 4. Список карт */
+        #cards {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            padding: 20px;
+        }
 
-    .card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.7); }
+        .card {
+            position: relative;
+            background: var(--tg-card);
+            border-radius: 20px;
+            padding: 20px;
+            color: #fff;
+            /* Красивая мягкая тень */
+            box-shadow: 0 6px 20px rgba(0,0,0,0.6), inset 0 0 0 1px #2a2a2a;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        }
 
-    .card .shop { font-size: 20px; font-weight: 700; margin-bottom: 5px; }
-    .card .number {
-        opacity: 0.9;
-        font-size: 16px;
-        text-align: right;
-        margin-top: 10px;
-        font-family: monospace; /* Для номера карты */
-    }
+        .card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.7); }
 
-    .delete-btn {
-        position: absolute;
-        top: 10px;
-        right: 12px;
-        background: rgba(255, 0, 0, 0.1); /* Легкий фон */
-        border: none;
-        color: #ff6b6b;
-        font-size: 24px;
-        width: 30px;
-        height: 30px;
-        line-height: 1;
-        border-radius: 50%;
-        cursor: pointer;
-        transition: transform 0.2s, background 0.2s;
-    }
-    .delete-btn:hover {
-        transform: scale(1.2) rotate(15deg);
-        background: rgba(255, 0, 0, 0.2);
-    }
+        .card .shop { font-size: 20px; font-weight: 700; margin-bottom: 5px; }
+        .card .number {
+            opacity: 0.9;
+            font-size: 16px;
+            text-align: right;
+            margin-top: 10px;
+            font-family: monospace;
+        }
 
-    /* 5. Модальное окно (Modal) */
-    .modal {
-        /* ... (оставляем настройки позиционирования) */
-        display: none;
-        align-items: center;
-        justify-content: center;
-        background: rgba(0,0,0,0.75); /* Более темный оверлей */
-        z-index: 1000;
-    }
+        .delete-btn {
+            position: absolute;
+            top: 10px;
+            right: 12px;
+            background: rgba(255, 0, 0, 0.1);
+            border: none;
+            color: #ff6b6b;
+            font-size: 24px;
+            width: 30px;
+            height: 30px;
+            line-height: 1;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s;
+        }
+        .delete-btn:hover {
+            transform: scale(1.2) rotate(15deg);
+            background: rgba(255, 0, 0, 0.2);
+        }
 
-    .modal-content {
-        background: #252525; /* Темнее фон */
-        border-radius: 25px; /* Больше скругление */
-        padding: 30px;
-        width: 90%;
-        max-width: 350px; /* Чуть уже */
-        text-align: center;
-        color: var(--tg-text);
-        box-shadow: 0 10px 30px var(--shadow-dark); /* Яркая тень */
-        animation: fadeIn 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
-    }
+        /* 5. Модальное окно (Modal) */
+        .modal {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,0,0,0.75);
+            z-index: 1000;
+        }
 
-    @keyframes fadeIn {
-        from { opacity: 0; transform: scale(0.9); }
-        to { opacity: 1; transform: scale(1); }
-    }
+        .modal-content {
+            background: #252525;
+            border-radius: 25px;
+            padding: 30px;
+            width: 90%;
+            max-width: 350px;
+            text-align: center;
+            color: var(--tg-text);
+            box-shadow: 0 10px 30px var(--shadow-dark);
+            animation: fadeIn 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
 
-    .modal-content h3 { margin-top: 0; font-size: 22px; font-weight: 700; color: #fff; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
 
-    /* Стили для кода (QR/Barcode) */
-    #qrcode, #barcode {
-        margin: 20px auto 10px;
-        padding: 10px;
-        background: #111; /* Контрастный фон для кода */
-        border-radius: 10px;
-        display: flex;
-        justify-content: center;
-        box-shadow: inset 0 0 5px rgba(0,0,0,0.5);
-    }
-    #qrcode > canvas {
-        border-radius: 8px; /* Скругление QR-кода */
-    }
-    #barcode {
-        width: 100%;
-        height: 100px; /* Фиксированная высота для штрихкода */
-    }
-    /* Сброс стилей для JSBarcode */
-    #barcode svg { max-width: 100%; height: auto; }
+        .modal-content h3 { margin-top: 0; font-size: 22px; font-weight: 700; color: #fff; }
+
+        /* Стили для кода (QR/Barcode) */
+        #qrcode, #barcode {
+            margin: 20px auto 10px;
+            padding: 10px;
+            background: #111;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.5);
+        }
+        #qrcode > canvas {
+            border-radius: 8px;
+        }
+        #barcode {
+            width: 100%;
+            height: 100px;
+        }
+        #barcode svg { max-width: 100%; height: auto; }
 
 
-    #modal-number {
-        margin-top: 15px;
-        opacity: 0.9;
-        font-size: 17px;
-        font-weight: 500;
-        letter-spacing: 1px;
-    }
+        #modal-number {
+            margin-top: 15px;
+            opacity: 0.9;
+            font-size: 17px;
+            font-weight: 500;
+            letter-spacing: 1px;
+        }
 
-    #closeModal {
-        margin-top: 20px;
-        background: var(--tg-accent);
-        color: #fff;
-        padding: 12px 25px;
-        font-size: 16px;
-        border-radius: 12px;
-        font-weight: 600;
-        transition: background 0.2s;
-        box-shadow: 0 4px 10px rgba(52, 152, 219, 0.4);
-    }
-</style>
+        #closeModal {
+            margin-top: 20px;
+            background: var(--tg-accent);
+            color: #fff;
+            padding: 12px 25px;
+            font-size: 16px;
+            border-radius: 12px;
+            font-weight: 600;
+            transition: background 0.2s;
+            box-shadow: 0 4px 10px rgba(52, 152, 219, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <span>Мои карты</span>
+        <button id="addBtn">＋</button>
+    </header>
+
+    <div class="form" id="form">
+        <input id="shop_name" placeholder="Название магазина" />
+        <input id="card_number" placeholder="Номер карты" />
+        <label>Тип кода:</label>
+        <select id="code_type">
+            <option value="barcode">Штрихкод</option>
+            <option value="qr">QR-код</option>
+        </select>
+        <label>Цвет карты:</label>
+        <div class="colors" id="colorSelect">
+            <div class="color active" style="background:#e63946" data-color="#e63946"></div> <div class="color" style="background:#f1fa8c" data-color="#f1fa8c"></div> <div class="color" style="background:#06d6a0" data-color="#06d6a0"></div> <div class="color" style="background:#118ab2" data-color="#118ab2"></div> <div class="color" style="background:#9b5de5" data-color="#9b5de5"></div> <div class="color" style="background:#ff9f1c" data-color="#ff9f1c"></div> </div>
+        <button id="saveCard">Сохранить карту</button>
+    </div>
+
+    <div id="cards"></div>
+
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <h3 id="modal-shop"></h3>
+            <div id="qrcode"></div>
+            <svg id="barcode"></svg>
+            <p id="modal-number"></p>
+            <button id="closeModal">Закрыть</button>
+        </div>
+    </div>
+
+    <script>
+        const tg = window.Telegram?.WebApp || {};
+        tg.expand?.();
+
+        const API_URL = "https://discount-cards.vercel.app/api/save"; // Не используется в текущей логике
+        const cardsDiv = document.getElementById("cards");
+        const form = document.getElementById("form");
+        const addBtn = document.getElementById("addBtn");
+        const saveCard = document.getElementById("saveCard");
+
+        let selectedColor = "#e63946";
+        let cards = [];
+
+        document.querySelectorAll(".color").forEach(c => {
+            c.onclick = () => {
+                document.querySelectorAll(".color").forEach(el => el.classList.remove("active"));
+                c.classList.add("active");
+                selectedColor = c.dataset.color;
+            };
+        });
+
+        addBtn.onclick = () => {
+            form.classList.toggle("active");
+        };
+
+        async function loadCards() {
+            const local = JSON.parse(localStorage.getItem("cards") || "[]");
+            cards = local;
+            renderCards();
+        }
+
+        function saveLocal() {
+            localStorage.setItem("cards", JSON.stringify(cards));
+        }
+
+        function renderCards() {
+            cardsDiv.innerHTML = "";
+            cards.forEach((c, i) => {
+                const div = document.createElement("div");
+                div.className = "card";
+                div.style.background = c.color || "#2a9d8f";
+                div.innerHTML = `
+                    <button class="delete-btn" data-index="${i}">✕</button>
+                    <div class="shop">${c.shop_name}</div>
+                    <div class="number">№ ${c.card_number}</div>
+                `;
+                div.querySelector(".delete-btn").onclick = (e) => {
+                    e.stopPropagation();
+                    confirmDelete(i);
+                };
+                div.onclick = () => openModal(c);
+                cardsDiv.appendChild(div);
+            });
+        }
+
+        function confirmDelete(index) {
+            if (confirm("Удалить эту карту?")) {
+                cards.splice(index, 1);
+                saveLocal();
+                renderCards();
+            }
+        }
+
+        saveCard.onclick = () => {
+            const shop_name = document.getElementById("shop_name").value.trim();
+            const card_number = document.getElementById("card_number").value.trim();
+            const type = document.getElementById("code_type").value;
+            if (!shop_name || !card_number) return alert("Заполните все поля!");
+
+            const newCard = { shop_name, card_number, color: selectedColor, type };
+            cards.push(newCard);
+            saveLocal();
+            renderCards();
+
+            // Сброс полей
+            document.getElementById("shop_name").value = "";
+            document.getElementById("card_number").value = "";
+            form.classList.remove("active");
+        };
+
+        // Modal
+        const modal = document.getElementById("modal");
+        const closeModal = document.getElementById("closeModal");
+        const modalShop = document.getElementById("modal-shop");
+        const modalNumber = document.getElementById("modal-number");
+        const barcode = document.getElementById("barcode");
+        const qrcodeDiv = document.getElementById("qrcode");
+
+        function openModal(card) {
+            modal.style.display = "flex";
+            modalShop.textContent = card.shop_name;
+            modalNumber.textContent = "№ " + card.card_number;
+            qrcodeDiv.innerHTML = "";
+            barcode.innerHTML = "";
+
+            if (card.type === "qr") {
+                const qr = new QRCode(qrcodeDiv, {
+                    text: card.card_number,
+                    width: 200,
+                    height: 200,
+                    colorDark: "#fff",
+                    colorLight: "#111",
+                });
+                barcode.style.display = 'none'; // Скрыть баркод
+                qrcodeDiv.style.display = 'flex'; // Показать QR
+            } else {
+                JsBarcode("#barcode", card.card_number, { format: "CODE128", displayValue: true, lineColor: "#fff", background: "#111" });
+                barcode.style.display = 'block'; // Показать баркод
+                qrcodeDiv.style.display = 'none'; // Скрыть QR
+            }
+        }
+
+        closeModal.onclick = () => modal.style.display = "none";
+        window.onclick = e => { if (e.target === modal) modal.style.display = "none"; };
+
+        loadCards();
+    </script>
+</body>
+</html>
