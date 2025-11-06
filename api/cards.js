@@ -2,60 +2,104 @@
 import { GoogleSpreadsheet } from "google-spreadsheet";
 import { JWT } from "google-auth-library";
 
-export default async function handler(req, res) {
-  // Убеждаемся, что принимаем только POST-запросы
-  if (req.method !== "POST") {
-    // Добавляем OPTIONS для CORS
-    if (req.method === "OPTIONS") {
-        res.setHeader('Access-Control-Allow-Origin', '*'); 
-        res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-        res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-        return res.status(200).end();
+// Проверьте, что имя листа в Google Sheets именно 'Cards' или используйте индекс
+const SHEET_INDEX = 0; // Первый лист
+
+// Функция для инициализации и авторизации
+async function getSpreadsheetSheet() {
+    // ВАЖНО: Используем вашу рабочую переменную окружения
+    const credentials = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_KEY);
+    const spreadsheetId = process.env.SHEET_ID;
+    
+    if (!credentials || !spreadsheetId) {
+        throw new Error('Missing Vercel environment variables (Service Account Key or Sheet ID).');
     }
-    return res.status(405).json({ error: "Method not allowed. Use POST." });
-  }
-
-  // Настройка CORS для ответа
-  res.setHeader('Access-Control-Allow-Origin', '*'); 
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-  try {
-    // ОЖИДАЕМ ДАННЫЕ КАРТЫ ОТ ФРОНТЕНДА
-    const { userId, cardName, cardNumber, barcodeType = 'CODE128' } = req.body; 
-
-    if (!userId || !cardName || !cardNumber) {
-        return res.status(400).json({ error: 'Missing required card data (userId, cardName, cardNumber).' });
-    }
-
-    // ВАША ЛОГИКА ПОДКЛЮЧЕНИЯ ИЗ api/save.js
-    const serviceAccount = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_KEY);
-    const sheetId = process.env.SHEET_ID;
 
     const serviceAuth = new JWT({
-      email: serviceAccount.client_email,
-      key: serviceAccount.private_key,
+      email: credentials.client_email,
+      key: credentials.private_key, 
       scopes: ["https://www.googleapis.com/auth/spreadsheets"],
     });
 
-    const doc = new GoogleSpreadsheet(sheetId, serviceAuth);
-    await doc.loadInfo();
+    const doc = new GoogleSpreadsheet(spreadsheetId, serviceAuth);
+    await doc.loadInfo(); 
+    
+    const sheet = doc.sheetsByIndex[SHEET_INDEX]; 
+    
+    if (!sheet) {
+        throw new Error(`Sheet with index ${SHEET_INDEX} not found.`);
+    }
+    
+    await sheet.loadHeaderRow(); // Загрузка заголовков
 
-    // Используем первый лист, как в вашем коде
-    const sheet = doc.sheetsByIndex[0]; 
-    await sheet.loadHeaderRow(); // Обязательно загружаем заголовки!
+    return sheet;
+}
 
-    // СОХРАНЯЕМ ДАННЫЕ КАРТЫ
-    await sheet.addRow({
-      UserID: userId,         // Должно совпадать с заголовком в Google Sheets
-      CardName: cardName,     // Должно совпадать с заголовком в Google Sheets
-      CardNumber: cardNumber, // Должно совпадать с заголовком в Google Sheets
-      BarcodeType: barcodeType // Должно совпадать с заголовком в Google Sheets
-    });
+export default async function handler(req, res) {
+    // Настройка CORS для Mini App
+    res.setHeader('Access-Control-Allow-Origin', '*'); 
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-    res.status(201).json({ success: true, message: 'Карта успешно сохранена.' });
-  } catch (err) {
-    console.error("❌ Ошибка:", err);
-    res.status(500).json({ error: "Ошибка при записи в Google Sheets", details: err.message });
-  }
+    // Обработка OPTIONS-запроса (проверка CORS)
+    if (req.method === "OPTIONS") {
+        return res.status(200).end();
+    }
+    
+    try {
+        const sheet = await getSpreadsheetSheet();
+        
+        // --------------------------------------------------
+        // A. GET-ЗАПРОС (Получение карт по UserID)
+        // --------------------------------------------------
+        if (req.method === 'GET') {
+            const { userId } = req.query; 
+            if (!userId) {
+                return res.status(400).json({ error: 'Missing userId query parameter.' });
+            }
+            
+            const rows = await sheet.getRows(); 
+
+            // row.UserID должен соответствовать заголовку столбца в Sheets
+            const cards = rows
+                .filter(row => String(row.UserID) === String(userId)) 
+                .map(row => ({
+                    userId: row.UserID,
+                    name: row.CardName || 'Без названия',
+                    number: row.CardNumber || '',          
+                    barcodeType: row.BarcodeType || 'CODE128' 
+                }));
+
+            return res.status(200).json({ cards });
+        }
+
+        // --------------------------------------------------
+        // B. POST-ЗАПРОС (Добавление новой карты)
+        // --------------------------------------------------
+        if (req.method === 'POST') {
+            const { userId, cardName, cardNumber, barcodeType = 'CODE128' } = req.body;
+            
+            if (!userId || !cardName || !cardNumber) {
+                return res.status(400).json({ error: 'Missing required card data.' });
+            }
+
+            // Добавляем новую строку (имена полей должны совпадать с заголовками Google Sheets!)
+            await sheet.addRow({
+                UserID: userId,
+                CardName: cardName,
+                CardNumber: cardNumber,
+                BarcodeType: barcodeType
+            });
+
+            return res.status(201).json({ success: true, message: 'Card added successfully.', card: req.body });
+        }
+        
+        // Блокируем другие методы
+        return res.status(405).json({ error: 'Method Not Allowed.' });
+
+    } catch (error) {
+        console.error('❌ API Error:', error);
+        // Возвращаем детали ошибки, чтобы помочь с отладкой
+        return res.status(500).json({ error: 'Failed to process request.', details: error.message || 'Internal server error.' });
+    }
 }
