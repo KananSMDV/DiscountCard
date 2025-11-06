@@ -35,7 +35,6 @@
       color: var(--tg-theme-button-color, #2a9d8f);
     }
 
-    /* Форма добавления */
     .form {
       display: none;
       flex-direction: column;
@@ -69,7 +68,6 @@
     .color:hover { transform: scale(1.1); }
     .color.active { border: 2px solid #000; }
 
-    /* Сетка карточек */
     #cards {
       display: flex;
       flex-direction: column;
@@ -108,7 +106,6 @@
       margin-top: 30px;
     }
 
-    /* Модалка */
     .modal {
       position: fixed;
       top: 0; left: 0;
@@ -174,7 +171,7 @@
       <option value="qr">QR-код</option>
     </select>
     <div class="colors" id="colorSelect">
-      <div class="color" style="background:#2a9d8f" data-color="#2a9d8f"></div>
+      <div class="color active" style="background:#2a9d8f" data-color="#2a9d8f"></div>
       <div class="color" style="background:#264653" data-color="#264653"></div>
       <div class="color" style="background:#e76f51" data-color="#e76f51"></div>
       <div class="color" style="background:#f4a261" data-color="#f4a261"></div>
@@ -220,7 +217,8 @@
     };
 
     async function loadCards() {
-      const res = await fetch(API_URL);
+      const user = tg.initDataUnsafe?.user || { id: "unknown" };
+      const res = await fetch(`${API_URL}?user_id=${user.id}`);
       const cards = await res.json();
       cardsDiv.innerHTML = "";
       cards.forEach(c => {
@@ -256,7 +254,6 @@
       } else alert("Ошибка при добавлении!");
     };
 
-    // Modal
     const modal = document.getElementById("modal");
     const closeModal = document.getElementById("closeModal");
     const modalShop = document.getElementById("modal-shop");
