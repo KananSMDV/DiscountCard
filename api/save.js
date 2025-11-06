@@ -3,26 +3,46 @@ import { JWT } from "google-auth-library";
 
 export default async function handler(req, res) {
   try {
-    const creds = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_KEY);
-
+    // Авторизация
     const serviceAccountAuth = new JWT({
-      email: creds.client_email,
-      key: creds.private_key,
+      email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
       scopes: ["https://www.googleapis.com/auth/spreadsheets"],
     });
 
-    const doc = new GoogleSpreadsheet(process.env.SHEET_ID, serviceAccountAuth);
+    const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEET_ID, serviceAccountAuth);
     await doc.loadInfo();
+    const sheet = doc.sheetsByIndex[0];
 
-    const sheet = doc.sheetsByTitle["Cards"] || doc.sheetsByIndex[0];
+    // 🟩 POST — добавляем карту
+    if (req.method === "POST") {
+      const { user, shop_name, card_number, color } = req.body;
+      if (!user?.id || !shop_name || !card_number) {
+        return res.status(400).json({ success: false, error: "Неполные данные" });
+      }
 
-    // ✅ ЗАГРУЗКА КАРТ
+      await sheet.addRow({
+        user_id: user.id,
+        username: user.username || "",
+        shop_name,
+        card_number,
+        color,
+        created_at: new Date().toISOString(),
+      });
+
+      return res.status(200).json({ success: true });
+    }
+
+    // 🟦 GET — получаем все карты пользователя
     if (req.method === "GET") {
       const { user_id } = req.query;
+      if (!user_id) return res.status(400).json({ error: "user_id обязателен" });
+
+      await sheet.loadCells("A1:F");
       const rows = await sheet.getRows();
 
       const userCards = rows
-        .filter((r) => String(r.user_id) === String(user_id))
+        .filter((r) => r.user_id === user_id.toString())
         .map((r) => ({
           shop_name: r.shop_name,
           card_number: r.card_number,
@@ -32,29 +52,9 @@ export default async function handler(req, res) {
       return res.status(200).json(userCards);
     }
 
-    // ✅ ДОБАВЛЕНИЕ КАРТ
-    if (req.method === "POST") {
-      const { user, shop_name, card_number, color } = req.body;
-
-      if (!user?.id || !shop_name || !card_number) {
-        return res.status(400).json({ error: "Missing required fields" });
-      }
-
-      await sheet.addRow({
-        timestamp: new Date().toLocaleString("ru-RU", { timeZone: "Europe/Moscow" }),
-        user_id: String(user.id),
-        username: user.username || "",
-        shop_name,
-        card_number,
-        color: color || "#007aff",
-      });
-
-      return res.status(200).json({ success: true });
-    }
-
-    return res.status(405).json({ error: "Method not allowed" });
+    return res.status(405).json({ error: "Метод не поддерживается" });
   } catch (err) {
-    console.error("❌ API ERROR:", err);
-    res.status(500).json({ error: err.message });
+    console.error("Ошибка Google Sheets:", err);
+    res.status(500).json({ success: false, error: err.message });
   }
 }
