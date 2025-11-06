@@ -1,125 +1,125 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Мои скидочные карты</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <style>
-    body {
-      font-family: "Inter", sans-serif;
-      background: #121212;
-      color: white;
-      margin: 0;
-      padding: 20px;
-    }
-    h1 { text-align: center; margin-bottom: 20px; }
-    .card {
-      border-radius: 12px;
-      padding: 16px;
-      margin-bottom: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-      transition: transform 0.2s;
-    }
-    .card:hover { transform: scale(1.02); }
-    .card img { width: 50px; height: 50px; border-radius: 8px; margin-right: 12px; }
-    form {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      margin-bottom: 25px;
-    }
-    input {
-      padding: 10px;
-      border: none;
-      border-radius: 8px;
-      font-size: 16px;
-    }
-    button {
-      background: #0088cc;
-      border: none;
-      padding: 10px;
-      border-radius: 8px;
-      color: white;
-      font-weight: 600;
-      cursor: pointer;
-      transition: 0.3s;
-    }
-    button:hover { background: #006da1; }
-  </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Мои скидочные карты</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    body {
+      font-family: "Inter", sans-serif;
+      background: #121212;
+      color: white;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 { text-align: center; margin-bottom: 20px; }
+    .card {
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      transition: transform 0.2s;
+    }
+    .card:hover { transform: scale(1.02); }
+    .card img { width: 50px; height: 50px; border-radius: 8px; margin-right: 12px; }
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 25px;
+    }
+    input {
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+    button {
+      background: #0088cc;
+      border: none;
+      padding: 10px;
+      border-radius: 8px;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    button:hover { background: #006da1; }
+  </style>
 </head>
 <body>
-  <h1>Мои скидочные карты</h1>
+  <h1>Мои скидочные карты</h1>
 
-  <form id="addForm">
-    <input type="text" id="shop_name" placeholder="Название магазина" required>
-    <input type="text" id="card_number" placeholder="Номер карты" required>
-    <input type="text" id="color" placeholder="Цвет (например, #ff5733)" value="#0088cc">
-    <input type="text" id="logo_url" placeholder="URL логотипа (необязательно)">
-    <button type="submit">Добавить карту</button>
-  </form>
+  <form id="addForm">
+    <input type="text" id="shop_name" placeholder="Название магазина" required>
+    <input type="text" id="card_number" placeholder="Номер карты" required>
+    <input type="text" id="color" placeholder="Цвет (например, #ff5733)" value="#0088cc">
+    <input type="text" id="logo_url" placeholder="URL логотипа (необязательно)">
+    <button type="submit">Добавить карту</button>
+  </form>
 
-  <div id="cards"></div>
+  <div id="cards"></div>
 
-  <script>
-    const tg = window.Telegram.WebApp;
-    tg.expand();
-    const apiUrl = "https://discount-card.vercel.app/api/save";
+  <script>
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+    const apiUrl = "https://discount-cards.vercel.app/api/save";
 
-    async function loadCards() {
-      const res = await fetch(apiUrl);
-      const cards = await res.json();
-      const list = document.getElementById("cards");
-      list.innerHTML = "";
-      cards.forEach(c => {
-        const div = document.createElement("div");
-        div.className = "card";
-        div.style.background = c.color || "#2a2a2a";
-        div.innerHTML = `
-          <div style="display:flex;align-items:center;">
-            ${c.logo_url ? `<img src="${c.logo_url}" alt="logo">` : ""}
-            <div>
-              <strong>${c.shop_name}</strong><br>
-              <small>${c.card_number}</small>
-            </div>
-          </div>
-        `;
-        list.appendChild(div);
-      });
-    }
+    async function loadCards() {
+      const res = await fetch(apiUrl);
+      const cards = await res.json();
+      const list = document.getElementById("cards");
+      list.innerHTML = "";
+      cards.forEach(c => {
+        const div = document.createElement("div");
+        div.className = "card";
+        div.style.background = c.color || "#2a2a2a";
+        div.innerHTML = `
+          <div style="display:flex;align-items:center;">
+            ${c.logo_url ? `<img src="${c.logo_url}" alt="logo">` : ""}
+            <div>
+              <strong>${c.shop_name}</strong><br>
+              <small>${c.card_number}</small>
+            </div>
+          </div>
+        `;
+        list.appendChild(div);
+      });
+    }
 
-    document.getElementById("addForm").addEventListener("submit", async e => {
-      e.preventDefault();
-      const shop_name = document.getElementById("shop_name").value.trim();
-      const card_number = document.getElementById("card_number").value.trim();
-      const color = document.getElementById("color").value.trim();
-      const logo_url = document.getElementById("logo_url").value.trim();
+    document.getElementById("addForm").addEventListener("submit", async e => {
+      e.preventDefault();
+      const shop_name = document.getElementById("shop_name").value.trim();
+      const card_number = document.getElementById("card_number").value.trim();
+      const color = document.getElementById("color").value.trim();
+      const logo_url = document.getElementById("logo_url").value.trim();
 
-      const res = await fetch(apiUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          user: tg.initDataUnsafe.user,
-          shop_name,
-          card_number,
-          color,
-          logo_url
-        })
-      });
+      const res = await fetch(apiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user: tg.initDataUnsafe.user,
+          shop_name,
+          card_number,
+          color,
+          logo_url
+        })
+      });
 
-      const data = await res.json();
-      if (data.success) {
-        tg.HapticFeedback.notificationOccurred("success");
-        loadCards();
-      } else {
-        alert("Ошибка при добавлении карты!");
-      }
-    });
+      const data = await res.json();
+      if (data.success) {
+        tg.HapticFeedback.notificationOccurred("success");
+        loadCards();
+      } else {
+        alert("Ошибка при добавлении карты!");
+      }
+    });
 
-    loadCards();
-  </script>
+    loadCards();
+  </script>
 </body>
 </html>
